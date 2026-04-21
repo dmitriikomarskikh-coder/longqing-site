@@ -6,7 +6,7 @@ import {Card, CardContent} from '@/components/ui/card';
 import {ContactForm} from '@/components/site/contact-form';
 import {CardGrid, SectionHeader} from '@/components/site/section';
 import {buildMetadata} from '@/lib/metadata';
-import {ArrowRight, Factory, Globe2, ShieldCheck} from 'lucide-react';
+import {ArrowRight, Factory, FileSearch, Globe2, MessageSquare, Network, ShieldCheck} from 'lucide-react';
 import {getTranslations} from 'next-intl/server';
 
 export async function generateMetadata({params}: {params: Promise<{locale: string}>}): Promise<Metadata> {
@@ -45,14 +45,29 @@ export default async function HomePage({params}: {params: Promise<{locale: strin
           </div>
           <div className="relative hidden lg:block">
             <div className="absolute -inset-8 rounded-full bg-amber-500/10 blur-3xl" />
-            <div className="relative grid gap-4 rounded-sm border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur">
-              {[Factory, Globe2, ShieldCheck].map((Icon, index) => (
-                <div key={index} className="flex items-center gap-4 border border-white/10 bg-slate-950/35 p-5">
-                  <Icon className="h-9 w-9 text-amber-300" />
-                  <div className="h-3 flex-1 rounded-full bg-white/20" />
+            <div className="relative grid gap-3 rounded-sm border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur">
+              {([
+                [Factory, why[0]],
+                [Globe2, why[1]],
+                [ShieldCheck, why[2]],
+              ] as [typeof Factory, string][]).map(([Icon, text], i) => (
+                <div key={i} className="flex items-center gap-4 border border-white/10 bg-slate-950/35 px-5 py-4">
+                  <Icon className="h-8 w-8 shrink-0 text-amber-300" />
+                  <p className="text-sm font-medium leading-6 text-white/90">{text}</p>
                 </div>
               ))}
-              <div className="h-56 border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.03))]" />
+              <div className="grid grid-cols-3 overflow-hidden border border-white/10">
+                {([
+                  [industries.length.toString(), home('statIndustriesLabel')],
+                  [services.length.toString(), home('statServicesLabel')],
+                  ['3', home('statLanguagesLabel')],
+                ] as [string, string][]).map(([value, label], i) => (
+                  <div key={i} className="bg-slate-950/50 p-4 text-center">
+                    <p className="text-3xl font-bold tabular-nums text-amber-300">{value}</p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-white/50">{label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -81,7 +96,21 @@ export default async function HomePage({params}: {params: Promise<{locale: strin
         <div className="container grid gap-12 lg:grid-cols-2">
           <div>
             <SectionHeader title={home('whyTitle')} />
-            <CardGrid items={why} />
+            <div className="grid gap-3">
+              {([
+                [MessageSquare, why[0]],
+                [ShieldCheck,   why[1]],
+                [FileSearch,    why[2]],
+                [Network,       why[3]],
+              ] as [typeof MessageSquare, string][]).map(([Icon, item]) => (
+                <div key={item} className="flex gap-4 border bg-white p-4 shadow-sm">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-sm bg-amber-50">
+                    <Icon className="h-5 w-5 text-amber-700" />
+                  </div>
+                  <p className="text-sm font-semibold leading-7 text-slate-800">{item}</p>
+                </div>
+              ))}
+            </div>
           </div>
           <div>
             <SectionHeader title={home('processTitle')} />
