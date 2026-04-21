@@ -2,11 +2,10 @@ import type {Metadata} from 'next';
 import type {Locale} from '@/i18n/routing';
 import {Link} from '@/i18n/routing';
 import {Button} from '@/components/ui/button';
-import {Card, CardContent} from '@/components/ui/card';
 import {ContactForm} from '@/components/site/contact-form';
 import {CardGrid, SectionHeader} from '@/components/site/section';
 import {buildMetadata} from '@/lib/metadata';
-import {ArrowRight, Factory, FileSearch, Globe2, MessageSquare, Network, ShieldCheck} from 'lucide-react';
+import {ArrowRight, BadgeCheck, ClipboardList, Factory, FileSearch, Globe2, MessageSquare, Network, ShieldCheck, Target} from 'lucide-react';
 import {getTranslations} from 'next-intl/server';
 
 export async function generateMetadata({params}: {params: Promise<{locale: string}>}): Promise<Metadata> {
@@ -24,6 +23,15 @@ export default async function HomePage({params}: {params: Promise<{locale: strin
   const industries = sections.raw('industries') as string[];
   const why = sections.raw('why') as string[];
   const process = sections.raw('process') as string[];
+
+  const SERVICE_IMAGES = [
+    'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&q=80',
+    'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=600&q=80',
+    'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=600&q=80',
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&q=80',
+    'https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?w=600&q=80',
+    'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=600&q=80',
+  ];
 
   return (
     <>
@@ -60,7 +68,7 @@ export default async function HomePage({params}: {params: Promise<{locale: strin
                 {([
                   [industries.length.toString(), home('statIndustriesLabel')],
                   [services.length.toString(), home('statServicesLabel')],
-                  ['3', home('statLanguagesLabel')],
+                  [home('statGlobalValue'), home('statGlobalLabel')],
                 ] as [string, string][]).map(([value, label], i) => (
                   <div key={i} className="bg-slate-950/50 p-4 text-center">
                     <p className="text-3xl font-bold tabular-nums text-amber-300">{value}</p>
@@ -76,14 +84,38 @@ export default async function HomePage({params}: {params: Promise<{locale: strin
       <section className="container py-20">
         <SectionHeader title={home('aboutTitle')} text={home('aboutText')} />
         <div className="grid gap-4 md:grid-cols-3">
-          {why.slice(0, 3).map((item) => <Card key={item} className="rounded-sm"><CardContent className="p-6 text-sm leading-7 text-slate-700">{item}</CardContent></Card>)}
+          {([
+            [Target,       why[0]],
+            [BadgeCheck,   why[1]],
+            [ClipboardList, why[2]],
+          ] as [typeof Target, string][]).map(([Icon, item]) => (
+            <div key={item} className="flex flex-col items-center gap-4 rounded-sm bg-slate-800 p-8 text-center">
+              <div className="grid h-12 w-12 place-items-center rounded-sm bg-amber-600/20">
+                <Icon className="h-6 w-6 text-amber-300" />
+              </div>
+              <p className="text-sm font-medium leading-7 text-slate-200">{item}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       <section className="bg-slate-100 py-20">
         <div className="container">
           <SectionHeader title={home('servicesTitle')} />
-          <CardGrid items={services} />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {services.map((service, i) => (
+              <div
+                key={service}
+                className="relative min-h-[220px] overflow-hidden rounded-sm"
+                style={{backgroundImage: `url(${SERVICE_IMAGES[i]})`, backgroundSize: 'cover', backgroundPosition: 'center'}}
+              >
+                <div className="absolute inset-0 bg-black/60" />
+                <div className="relative flex h-full min-h-[220px] items-end p-6">
+                  <p className="text-base font-semibold leading-7 text-white">{service}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

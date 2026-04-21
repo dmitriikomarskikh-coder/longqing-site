@@ -20,14 +20,15 @@
     "aboutTitle": "A focused trading partner for industrial requirements",
     "aboutText": "We work with customers who need practical support in international sourcing, technical solution selection and coordination of supply for industrial equipment, spare parts and consumables.",
     "servicesTitle": "What we do",
-    "industriesTitle": "Industries we work with",
+    "industriesTitle": "Key Industries",
     "whyTitle": "Why choose us",
     "processTitle": "How we work",
     "contactTitle": "Send an inquiry",
     "contactText": "Share the basic requirement, equipment category, operating conditions or part description. We will review the request and respond with next steps.",
     "statIndustriesLabel": "Industries served",
     "statServicesLabel": "Service areas",
-    "statLanguagesLabel": "Languages"
+    "statGlobalValue": "Global",
+    "statGlobalLabel": "Supply reach"
   },
   "sections": {
     "services": ["Supply of industrial equipment", "Supply of spare parts and consumables", "Repair and restoration of industrial equipment", "Service support", "Technical solution selection according to customer requirements", "International supply coordination and sourcing"],

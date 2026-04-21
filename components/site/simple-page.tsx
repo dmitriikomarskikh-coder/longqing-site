@@ -5,10 +5,16 @@ import type {Locale} from '@/i18n/routing';
 import {site} from '@/lib/site';
 import {Mail, MessageCircle, Phone, Send} from 'lucide-react';
 
-export function PageHero({title, lead}: {title: string; lead: string}) {
+export function PageHero({title, lead, backgroundImage}: {title: string; lead: string; backgroundImage?: string}) {
   return (
-    <section className="border-b bg-slate-950 text-white industrial-grid">
-      <div className="container py-20">
+    <section
+      className="relative overflow-hidden border-b text-white industrial-grid"
+      style={backgroundImage ? {backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center'} : undefined}
+    >
+      {backgroundImage
+        ? <div className="absolute inset-0 bg-slate-950/75" />
+        : <div className="absolute inset-0 bg-slate-950" />}
+      <div className="relative container py-20">
         <h1 className="max-w-4xl text-4xl font-semibold tracking-[-0.035em] md:text-6xl">{title}</h1>
         <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{lead}</p>
       </div>
