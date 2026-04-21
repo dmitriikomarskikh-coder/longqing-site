@@ -1,0 +1,46 @@
+{
+  "nav": {"home": "Home", "about": "About", "services": "Services", "industries": "Industries", "contacts": "Contacts", "language": "Language", "menu": "Menu"},
+  "common": {"company": "Longqing International Trading", "domain": "longqingtrade.com", "email": "office@longqingtrade.com", "phone": "+86 000 0000 0000", "wechat": "WeChat", "telegram": "Telegram", "requestQuote": "Send inquiry", "learnMore": "Learn more", "address": "China, Shandong Province, Jining City, High-tech Zone, Guanghe Street, Red Star Macalline Global Home Furnishing Plaza, Building 1, Unit SOH001, 24F, Room 01-2417, 272000"},
+  "meta": {
+    "home": {"title": "Longqing International Trading | Industrial Equipment Supply and Service", "description": "A multilingual B2B website for industrial equipment supply, spare parts, consumables, repair, restoration and service support."},
+    "about": {"title": "About | Longqing International Trading", "description": "Learn about Longqing International Trading and its conservative, requirement-led approach to international industrial supply."},
+    "services": {"title": "Services | Industrial Supply, Repair and Service Support", "description": "Industrial equipment supply, spare parts, consumables, repair, restoration, service support and technical solution selection."},
+    "industries": {"title": "Industries | Longqing International Trading", "description": "Support for industrial customers in mining, metallurgy, power generation, oil and gas, manufacturing, marine, construction and processing."},
+    "contacts": {"title": "Contacts | Longqing International Trading", "description": "Contact Longqing International Trading for industrial equipment, spare parts, repair and service inquiries."},
+    "privacy": {"title": "Privacy Policy | Longqing International Trading", "description": "Privacy policy for inquiries submitted to Longqing International Trading."},
+    "cookies": {"title": "Cookie Policy | Longqing International Trading", "description": "Cookie policy for longqingtrade.com."},
+    "legal": {"title": "Legal Notice | Longqing International Trading", "description": "Legal notice and terms for longqingtrade.com."},
+    "thankYou": {"title": "Thank You | Longqing International Trading", "description": "Thank you for contacting Longqing International Trading."}
+  },
+  "home": {
+    "eyebrow": "Industrial supply and service coordination",
+    "heroTitle": "Equipment, parts and service support for industrial operations",
+    "heroText": "Longqing International Trading helps industrial customers coordinate supply, repair, restoration and service support according to technical requirements and purchasing conditions.",
+    "heroNote": "Careful sourcing. Clear communication. Conservative commitments.",
+    "aboutTitle": "A focused trading partner for industrial requirements",
+    "aboutText": "We work with customers who need practical support in international sourcing, technical solution selection and coordination of supply for industrial equipment, spare parts and consumables.",
+    "servicesTitle": "What we do",
+    "industriesTitle": "Industries we work with",
+    "whyTitle": "Why choose us",
+    "processTitle": "How we work",
+    "contactTitle": "Send an inquiry",
+    "contactText": "Share the basic requirement, equipment category, operating conditions or part description. We will review the request and respond with next steps."
+  },
+  "sections": {
+    "services": ["Supply of industrial equipment", "Supply of spare parts and consumables", "Repair and restoration of industrial equipment", "Service support", "Technical solution selection according to customer requirements", "International supply coordination and sourcing"],
+    "industries": ["Mining", "Metallurgy", "Power generation", "Oil and gas", "Manufacturing", "Marine and port operations", "Construction and heavy industry", "Industrial processing"],
+    "why": ["Requirement-led communication", "No unsupported claims or inflated promises", "Attention to documentation and technical fit", "Coordination across sourcing, supply and service steps"],
+    "process": ["Review the customer requirement", "Clarify technical and commercial details", "Select a suitable supply or service route", "Coordinate delivery, repair or support steps", "Keep communication structured until completion"]
+  },
+  "pages": {
+    "aboutTitle": "About the company", "aboutLead": "Longqing International Trading is a B2B trading company focused on industrial equipment, spare parts, consumables, repair, restoration and service support.", "aboutBody": "The company works with careful, requirement-based communication. We do not position ourselves through unsupported claims; instead, we focus on understanding the customer request, clarifying technical needs and coordinating practical supply or service routes.",
+    "servicesTitle": "Services", "servicesLead": "Our scope is intentionally clear: industrial supply, repair, restoration, service support and sourcing coordination.",
+    "industriesTitle": "Industries", "industriesLead": "We support customers operating equipment and industrial systems in demanding sectors where technical accuracy and reliable coordination matter.",
+    "contactsTitle": "Contacts", "contactsLead": "Send a request and include as much technical context as possible. Drawings, part descriptions and operating conditions can be shared during follow-up communication.",
+    "privacyTitle": "Privacy Policy", "privacyLead": "We process contact details and inquiry information only to respond to business requests and maintain related communication.",
+    "cookiesTitle": "Cookie Policy", "cookiesLead": "This website is designed to operate with minimal cookies. If analytics or additional services are added later, this policy should be updated.",
+    "legalTitle": "Legal Notice / Terms", "legalLead": "Information on this website is provided for general business communication and does not constitute a binding commercial offer unless confirmed in a separate written agreement.",
+    "thankYouTitle": "Thank you", "thankYouLead": "Your inquiry has been received. We will review the information and respond with the next practical steps."
+  },
+  "form": {"name": "Name", "company": "Company", "email": "Email", "phone": "Phone / Messenger", "message": "Message", "consent": "I agree that my information may be processed to respond to this inquiry.", "submit": "Send inquiry", "submitting": "Sending...", "success": "Inquiry sent. Redirecting...", "required": "This field is required", "emailInvalid": "Enter a valid email address", "consentRequired": "Consent is required"}
+}
