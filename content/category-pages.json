@@ -1,0 +1,54 @@
+[
+  {
+    "slug": "mtu-spare-parts",
+    "title": {
+      "ru": "Запчасти MTU из Китая",
+      "zh": "来自中国的 MTU 备件",
+      "en": "MTU Spare Parts from China"
+    },
+    "description": {
+      "ru": "Поставка запчастей MTU, включая позиции для двигателей серии 4000. Подбор по артикулу, спецификации или серийному номеру двигателя.",
+      "zh": "供应 MTU 备件，包括 4000 系列发动机相关产品。可按型号、规格或发动机序列号匹配。",
+      "en": "Supply of MTU spare parts, including items for 4000 series engines. Sourcing by part number, specification, or engine serial number."
+    }
+  },
+  {
+    "slug": "cummins-spare-parts",
+    "title": {
+      "ru": "Запчасти Cummins из Китая",
+      "zh": "来自中国的 Cummins 备件",
+      "en": "Cummins Spare Parts from China"
+    },
+    "description": {
+      "ru": "Поставка комплектующих и расходных материалов для оборудования Cummins. Работаем под заказ и по спецификациям.",
+      "zh": "供应 Cummins 设备相关部件和耗材。可按订单和规格书处理。",
+      "en": "Supply of components and consumables for Cummins equipment. We work to order and by specification."
+    }
+  },
+  {
+    "slug": "mitsubishi-spare-parts",
+    "title": {
+      "ru": "Запчасти Mitsubishi из Китая",
+      "zh": "来自中国的 Mitsubishi 备件",
+      "en": "Mitsubishi Spare Parts from China"
+    },
+    "description": {
+      "ru": "Подбор и поставка комплектующих Mitsubishi для промышленного оборудования и техники.",
+      "zh": "为工业设备和机械匹配并供应 Mitsubishi 相关部件。",
+      "en": "Sourcing and supply of Mitsubishi components for industrial equipment and machinery."
+    }
+  },
+  {
+    "slug": "industrial-spare-parts-from-china",
+    "title": {
+      "ru": "Промышленные запчасти из Китая",
+      "zh": "来自中国的工业备件",
+      "en": "Industrial Spare Parts from China"
+    },
+    "description": {
+      "ru": "Поставка промышленного оборудования и запчастей из Китая для предприятий России и СНГ.",
+      "zh": "为俄罗斯及独联体企业供应来自中国的工业设备和备件。",
+      "en": "Supply of industrial equipment and spare parts from China for companies in Russia and the CIS."
+    }
+  }
+]

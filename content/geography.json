@@ -1,0 +1,29 @@
+{
+  "countries": [
+    {
+      "id": "ru-cis",
+      "name": {"ru": "Россия и СНГ", "zh": "俄罗斯及独联体", "en": "Russia and CIS"},
+      "region": {"ru": "Промышленные предприятия и сервисные подрядчики", "zh": "工业企业和服务承包商", "en": "Industrial enterprises and service contractors"}
+    },
+    {
+      "id": "asia",
+      "name": {"ru": "Азия", "zh": "亚洲", "en": "Asia"},
+      "region": {"ru": "Китай, Юго-Восточная Азия и соседние рынки", "zh": "中国、东南亚及周边市场", "en": "China, Southeast Asia, and nearby markets"}
+    },
+    {
+      "id": "middle-east",
+      "name": {"ru": "Ближний Восток", "zh": "中东", "en": "Middle East"},
+      "region": {"ru": "Решения для энергетики, строительства и добычи", "zh": "面向能源、建设和采矿行业", "en": "Supply for energy, construction, and mining"}
+    },
+    {
+      "id": "africa",
+      "name": {"ru": "Африка", "zh": "非洲", "en": "Africa"},
+      "region": {"ru": "Проектный подбор оборудования и запчастей", "zh": "设备和备件项目供应", "en": "Project supply of equipment and parts"}
+    },
+    {
+      "id": "latin-america",
+      "name": {"ru": "Латинская Америка", "zh": "拉丁美洲", "en": "Latin America"},
+      "region": {"ru": "Международная логистика и технический подбор", "zh": "国际物流和技术选型", "en": "International logistics and technical sourcing"}
+    }
+  ]
+}

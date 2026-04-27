@@ -1,0 +1,54 @@
+[
+  {
+    "id": "equipment",
+    "title": {
+      "ru": "Закупка оборудования",
+      "zh": "设备供应",
+      "en": "Equipment supply"
+    },
+    "description": {
+      "ru": "Подбор и закупка промышленного оборудования под технические требования проекта.",
+      "zh": "根据项目技术要求选择并供应工业设备。",
+      "en": "Selection and supply of industrial equipment according to project requirements."
+    }
+  },
+  {
+    "id": "spare-parts",
+    "title": {
+      "ru": "Запчасти и расходные материалы",
+      "zh": "零部件与耗材",
+      "en": "Spare parts and consumables"
+    },
+    "description": {
+      "ru": "Оригинальные и совместимые позиции для ремонта, обслуживания и плановых закупок.",
+      "zh": "用于维修、维护和计划采购的原厂及兼容备件。",
+      "en": "Original and compatible items for repair, maintenance, and planned procurement."
+    }
+  },
+  {
+    "id": "repair",
+    "title": {
+      "ru": "Ремонт и сервис",
+      "zh": "维修与服务",
+      "en": "Repair and service"
+    },
+    "description": {
+      "ru": "Диагностика, ремонт и сервисное сопровождение промышленного оборудования.",
+      "zh": "工业设备诊断、维修和服务支持。",
+      "en": "Diagnostics, repair, and service support for industrial equipment."
+    }
+  },
+  {
+    "id": "logistics",
+    "title": {
+      "ru": "Международная логистика",
+      "zh": "国际物流",
+      "en": "International logistics"
+    },
+    "description": {
+      "ru": "Организация маршрутов по всему миру с учетом сроков, документов и логистики.",
+      "zh": "根据交期、文件和路线安排全球交付。",
+      "en": "Global delivery coordination with lead times, documents, and routes in mind."
+    }
+  }
+]
