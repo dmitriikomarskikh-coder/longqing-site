@@ -1,37 +1,83 @@
-import type {Locale} from '@/i18n/routing';
-import {routing} from '@/i18n/routing';
-import {NextIntlClientProvider, hasLocale} from 'next-intl';
-import {getMessages} from 'next-intl/server';
-import {notFound} from 'next/navigation';
-import {Manrope} from 'next/font/google';
-import {Header} from '@/components/site/header';
-import {Footer} from '@/components/site/footer';
-import {Toaster} from '@/components/ui/sonner';
-import '../globals.css';
+import "@/app/globals.css";
+import type {Metadata} from "next";
+import {NextIntlClientProvider} from "next-intl";
+import {getMessages, setRequestLocale} from "next-intl/server";
+import {Inter, Noto_Sans_SC} from "next/font/google";
+import {notFound} from "next/navigation";
+import type {ReactNode} from "react";
+import {Footer} from "@/components/Footer";
+import {Header} from "@/components/Header";
+import {locales, type Locale} from "@/i18n/routing";
 
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-inter",
+  display: "swap"
+});
 
-const manrope = Manrope({subsets: ['latin', 'cyrillic'], variable: '--font-sans'});
+const notoSansSc = Noto_Sans_SC({
+  subsets: ["latin"],
+  variable: "--font-noto-sans-sc",
+  display: "swap"
+});
 
-export default async function LocaleLayout({children, params}: Readonly<{children: React.ReactNode; params: Promise<{locale: string}>}>) {
-  const requestedLocale = (await params).locale;
+export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://longqingtrade.com"
+  ),
+  title: {
+    template: "%s | Longqing Trade",
+    default: "Longqing Trade"
+  },
+  description:
+    "Independent supply and service of industrial equipment and compatible spare parts worldwide."
+};
 
-  if (!hasLocale(routing.locales, requestedLocale)) {
+export function generateStaticParams() {
+  return locales.map((locale) => ({locale}));
+}
+
+export default async function LocaleLayout({
+  children,
+  params
+}: {
+  children: ReactNode;
+  params: Promise<{locale: string}>;
+}) {
+  const {locale} = await params;
+
+  if (!locales.includes(locale as Locale)) {
     notFound();
   }
 
-  const locale = requestedLocale as Locale;
+  setRequestLocale(locale);
   const messages = await getMessages();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://longqingtrade.com";
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Shandong Longqing International Trading Co., Ltd",
+    alternateName: [
+      "LONGQING Trade",
+      "ООО «Шаньдун Лунцин Интернэшнл Трейдинг»",
+      "山东龙擎国际贸易有限责任公司"
+    ],
+    url: siteUrl,
+    email: "office@longqingtrade.com",
+    telephone: "+7 900 000 00 00"
+  };
 
   return (
-    <html lang={locale} className={manrope.variable}>
-      <body>
+    <html lang={locale} className={`${inter.variable} ${notoSansSc.variable}`}>
+      <body className="font-sans antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{__html: JSON.stringify(organizationJsonLd)}}
+        />
         <NextIntlClientProvider messages={messages}>
-          <Header locale={locale} />
-          <main>{children}</main>
-          <Footer locale={locale} />
-          <Toaster richColors position="top-right" />
+          <Header locale={locale as Locale} />
+          {children}
+          <Footer locale={locale as Locale} />
         </NextIntlClientProvider>
       </body>
     </html>

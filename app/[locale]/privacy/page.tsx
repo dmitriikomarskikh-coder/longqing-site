@@ -1,22 +1,32 @@
-import type {Metadata} from 'next';
-import type {Locale} from '@/i18n/routing';
-import {LegalPage} from '@/components/site/simple-page';
-import {buildMetadata} from '@/lib/metadata';
-import {getTranslations} from 'next-intl/server';
+import {setRequestLocale} from "next-intl/server";
+import type {Locale} from "@/i18n/routing";
 
-export async function generateMetadata({params}: {params: Promise<{locale: string}>}): Promise<Metadata> {
-  const locale = (await params).locale as Locale;
-  const t = await getTranslations({locale, namespace: 'meta.privacy'});
-  return buildMetadata({locale, pathname: '/privacy', title: t('title'), description: t('description')});
-}
+export default async function PrivacyPage({
+  params
+}: {
+  params: Promise<{locale: Locale}>;
+}) {
+  const {locale} = await params;
+  setRequestLocale(locale);
 
-export default async function PrivacyPage({params}: {params: Promise<{locale: string}>}) {
-  const locale = (await params).locale as Locale;
-  const t = await getTranslations({locale, namespace: 'pages'});
-  const paragraphs = {
-    en: ['We collect only information voluntarily provided through inquiry forms or direct business communication.', 'Information may include name, company, email, phone or messenger details, message content and related technical context.', 'This information is used to review requests, respond to inquiries and maintain business communication. It is not sold or used for unrelated advertising.', 'Requests to update or delete submitted information can be sent to office@longqingtrade.com.'],
-    ru: ['Мы собираем только информацию, добровольно переданную через формы запроса или прямую деловую коммуникацию.', 'Информация может включать имя, компанию, email, телефон или мессенджер, текст сообщения и связанный технический контекст.', 'Эти данные используются для изучения запросов, ответа на обращения и поддержания деловой коммуникации. Они не продаются и не используются для несвязанной рекламы.', 'Запросы на обновление или удаление переданной информации можно направить на office@longqingtrade.com.'],
-    zh: ['我们仅收集用户通过询盘表单或直接商务沟通自愿提供的信息。', '信息可能包括姓名、公司、邮箱、电话或通讯方式、留言内容及相关技术背景。', '这些信息用于审核需求、回复询盘并保持商务沟通，不会出售或用于无关广告。', '如需更新或删除已提交的信息，可联系 office@longqingtrade.com。'],
-  }[locale];
-  return <LegalPage title={t('privacyTitle')} lead={t('privacyLead')} paragraphs={paragraphs} />;
+  return (
+    <main className="bg-light px-5 pb-20 pt-32 text-dark">
+      <article className="mx-auto max-w-3xl">
+        <h1 className="text-5xl font-semibold">
+          {locale === "ru"
+            ? "Политика конфиденциальности"
+            : locale === "zh"
+              ? "隐私政策"
+              : "Privacy Policy"}
+        </h1>
+        <p className="mt-8 text-base leading-8 text-neutral-700">
+          {locale === "ru"
+            ? "Типовой шаблон политики конфиденциальности. Финальная юридическая редакция будет добавлена перед запуском."
+            : locale === "zh"
+              ? "隐私政策模板。正式法律版本将在上线前补充。"
+              : "Privacy policy template. The final legal version will be added before launch."}
+        </p>
+      </article>
+    </main>
+  );
 }

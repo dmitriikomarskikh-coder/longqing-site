@@ -1,10 +1,13 @@
-import type {MetadataRoute} from 'next';
-import {site} from '@/lib/site';
+import type {MetadataRoute} from "next";
 
 export default function robots(): MetadataRoute.Robots {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://longqingtrade.com";
+
   return {
-    rules: [{userAgent: '*', allow: '/'}],
-    sitemap: `${site.url}/sitemap.xml`,
-    host: site.url,
+    rules: {
+      userAgent: "*",
+      allow: "/"
+    },
+    sitemap: `${siteUrl}/sitemap.xml`
   };
 }

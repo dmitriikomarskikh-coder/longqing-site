@@ -1,23 +1,43 @@
-# Longqing International Trading Website
+# Longqing Trade
 
-Production-ready multilingual corporate website for Longqing International Trading.
+Corporate website for ООО «Шаньдун Лунцин Интернэшнл Трейдинг».
 
-## Local development
+## Stack
+
+- Next.js 15 App Router
+- TypeScript strict
+- Tailwind CSS v4
+- next-intl for `ru`, `zh`, `en`
+- Static JSON/MDX content
+
+## Local Development
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-## Production build
+Open `http://localhost:3000/en`.
+
+## Useful Commands
 
 ```bash
+npm run typecheck
 npm run build
 ```
 
-## Cloudflare Pages build check
+## Content
 
-```bash
-npx @cloudflare/next-on-pages
-```
+- Brands: `content/brands.json`
+- Services: `content/services.json`
+- Geography: `content/geography.json`
+- News: `content/news/*.mdx`
 
-Cloudflare Pages build command should be `next build`.
+## Legal Tone
+
+Do not describe the company as an official, authorized, certified partner, dealer, or distributor of any manufacturer. Use neutral wording: compatible equipment, independent supply, and repair/service for equipment of named manufacturers.
+
+## Deployment
+
+Production target: Timeweb Cloud VPS with Docker, Nginx reverse proxy, and Let's Encrypt SSL.

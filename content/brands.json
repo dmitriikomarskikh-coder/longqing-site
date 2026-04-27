@@ -1,0 +1,1413 @@
+[
+  {
+    "slug": "mitsubishi",
+    "name": {
+      "ru": "Mitsubishi",
+      "zh": "三菱",
+      "en": "Mitsubishi"
+    },
+    "country": "Япония",
+    "logo": "/Logos/mitsubishi.svg",
+    "sectors": [
+      "energy",
+      "machinery"
+    ],
+    "description": {
+      "ru": "Оборудование и компоненты Mitsubishi применяются в энергетике и машиностроении.",
+      "zh": "三菱设备和部件用于能源与机械制造领域。",
+      "en": "Mitsubishi equipment and components are used in energy and machinery."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Энергетическое оборудование",
+        "Промышленные компоненты",
+        "Запчасти"
+      ],
+      "zh": [
+        "能源设备",
+        "工业部件",
+        "备件"
+      ],
+      "en": [
+        "Energy equipment",
+        "Industrial components",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "siemens",
+    "name": {
+      "ru": "Siemens",
+      "zh": "西门子",
+      "en": "Siemens"
+    },
+    "country": "Германия",
+    "logo": "/Logos/siemens.svg",
+    "sectors": [
+      "energy",
+      "automation"
+    ],
+    "description": {
+      "ru": "Решения Siemens востребованы в энергетике, автоматизации и промышленной инфраструктуре.",
+      "zh": "西门子相关产品广泛用于能源、自动化和工业基础设施。",
+      "en": "Siemens-related products are used in energy, automation, and industrial infrastructure."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Автоматизация",
+        "Электрооборудование",
+        "Запчасти"
+      ],
+      "zh": [
+        "自动化",
+        "电气设备",
+        "备件"
+      ],
+      "en": [
+        "Automation",
+        "Electrical equipment",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "mtu",
+    "name": {
+      "ru": "MTU",
+      "zh": "MTU",
+      "en": "MTU"
+    },
+    "country": "Германия",
+    "logo": "/Logos/mtu.svg",
+    "sectors": [
+      "engines"
+    ],
+    "description": {
+      "ru": "MTU связан с дизельными двигателями и энергетическими установками.",
+      "zh": "MTU 相关产品用于柴油发动机和动力系统。",
+      "en": "MTU-related products are used for diesel engines and power systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Дизельные двигатели",
+        "Фильтры",
+        "Сервисные комплекты"
+      ],
+      "zh": [
+        "柴油发动机",
+        "滤清器",
+        "维护套件"
+      ],
+      "en": [
+        "Diesel engines",
+        "Filters",
+        "Service kits"
+      ]
+    }
+  },
+  {
+    "slug": "caterpillar",
+    "name": {
+      "ru": "Caterpillar",
+      "zh": "卡特彼勒",
+      "en": "Caterpillar"
+    },
+    "country": "США",
+    "logo": "/Logos/caterpillar.svg",
+    "sectors": [
+      "construction",
+      "engines"
+    ],
+    "description": {
+      "ru": "Техника и двигатели Caterpillar применяются в строительстве, добыче и энергетике.",
+      "zh": "卡特彼勒设备和发动机用于建设、采矿和能源领域。",
+      "en": "Caterpillar equipment and engines are used in construction, mining, and energy."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Спецтехника",
+        "Двигатели",
+        "Гидравлика"
+      ],
+      "zh": [
+        "工程机械",
+        "发动机",
+        "液压件"
+      ],
+      "en": [
+        "Heavy equipment",
+        "Engines",
+        "Hydraulics"
+      ]
+    }
+  },
+  {
+    "slug": "hitachi",
+    "name": {
+      "ru": "Hitachi",
+      "zh": "日立",
+      "en": "Hitachi"
+    },
+    "country": "Япония",
+    "logo": "/Logos/hitachi.svg",
+    "sectors": [
+      "construction",
+      "energy"
+    ],
+    "description": {
+      "ru": "Оборудование Hitachi используется в спецтехнике, энергетике и промышленности.",
+      "zh": "日立设备用于工程机械、能源和工业领域。",
+      "en": "Hitachi equipment is used in heavy machinery, energy, and industry."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Экскаваторы",
+        "Электрооборудование",
+        "Запчасти"
+      ],
+      "zh": [
+        "挖掘机",
+        "电气设备",
+        "备件"
+      ],
+      "en": [
+        "Excavators",
+        "Electrical equipment",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "liebherr",
+    "name": {
+      "ru": "Liebherr",
+      "zh": "利勃海尔",
+      "en": "Liebherr"
+    },
+    "country": "Германия/Швейцария",
+    "logo": "/Logos/liebherr.svg",
+    "sectors": [
+      "construction",
+      "cranes"
+    ],
+    "description": {
+      "ru": "Liebherr представлен в сегментах спецтехники, кранов и промышленных систем.",
+      "zh": "利勃海尔相关产品覆盖工程机械、起重设备和工业系统。",
+      "en": "Liebherr-related products cover heavy machinery, cranes, and industrial systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Краны",
+        "Экскаваторы",
+        "Запчасти"
+      ],
+      "zh": [
+        "起重机",
+        "挖掘机",
+        "备件"
+      ],
+      "en": [
+        "Cranes",
+        "Excavators",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "komatsu",
+    "name": {
+      "ru": "Komatsu",
+      "zh": "小松",
+      "en": "Komatsu"
+    },
+    "country": "Япония",
+    "logo": "/Logos/komatsu.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "Техника Komatsu применяется в строительстве, карьерах и добывающих проектах.",
+      "zh": "小松设备用于建设、采石和采矿项目。",
+      "en": "Komatsu equipment is used in construction, quarrying, and mining projects."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Бульдозеры",
+        "Экскаваторы",
+        "Ходовая часть"
+      ],
+      "zh": [
+        "推土机",
+        "挖掘机",
+        "底盘件"
+      ],
+      "en": [
+        "Bulldozers",
+        "Excavators",
+        "Undercarriage"
+      ]
+    }
+  },
+  {
+    "slug": "abb",
+    "name": {
+      "ru": "ABB",
+      "zh": "ABB",
+      "en": "ABB"
+    },
+    "country": "Швейцария",
+    "logo": "/Logos/abb.svg",
+    "sectors": [
+      "electrical",
+      "robotics"
+    ],
+    "description": {
+      "ru": "ABB охватывает электрооборудование, автоматизацию и робототехнику.",
+      "zh": "ABB 相关产品覆盖电气设备、自动化和机器人。",
+      "en": "ABB-related products cover electrical equipment, automation, and robotics."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Приводы",
+        "Роботы",
+        "Электрокомпоненты"
+      ],
+      "zh": [
+        "驱动器",
+        "机器人",
+        "电气部件"
+      ],
+      "en": [
+        "Drives",
+        "Robots",
+        "Electrical components"
+      ]
+    }
+  },
+  {
+    "slug": "cummins",
+    "name": {
+      "ru": "Cummins",
+      "zh": "康明斯",
+      "en": "Cummins"
+    },
+    "country": "США",
+    "logo": "/Logos/cummins.svg",
+    "sectors": [
+      "engines"
+    ],
+    "description": {
+      "ru": "Cummins известен дизельными двигателями, генераторными установками и компонентами.",
+      "zh": "康明斯相关产品包括柴油发动机、发电机组和部件。",
+      "en": "Cummins-related products include diesel engines, generator sets, and components."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Двигатели",
+        "Генераторы",
+        "Фильтры"
+      ],
+      "zh": [
+        "发动机",
+        "发电机组",
+        "滤清器"
+      ],
+      "en": [
+        "Engines",
+        "Generator sets",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "murphy",
+    "name": {
+      "ru": "Murphy",
+      "zh": "Murphy",
+      "en": "Murphy"
+    },
+    "country": "США",
+    "logo": "/Logos/murphy.svg",
+    "sectors": [
+      "control"
+    ],
+    "description": {
+      "ru": "Murphy применяется в системах контроля и защиты двигателей.",
+      "zh": "Murphy 相关产品用于发动机监控与保护系统。",
+      "en": "Murphy products are used in engine monitoring and protection systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Контроллеры",
+        "Датчики",
+        "Панели управления"
+      ],
+      "zh": [
+        "控制器",
+        "传感器",
+        "控制面板"
+      ],
+      "en": [
+        "Controllers",
+        "Sensors",
+        "Control panels"
+      ]
+    }
+  },
+  {
+    "slug": "xcmg",
+    "name": {
+      "ru": "XCMG",
+      "zh": "徐工",
+      "en": "XCMG"
+    },
+    "country": "Китай",
+    "logo": "/Logos/xcmg.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "XCMG выпускает широкий спектр строительной и дорожной техники.",
+      "zh": "徐工覆盖广泛的工程和道路机械。",
+      "en": "XCMG covers a wide range of construction and road machinery."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Краны",
+        "Погрузчики",
+        "Запчасти"
+      ],
+      "zh": [
+        "起重机",
+        "装载机",
+        "备件"
+      ],
+      "en": [
+        "Cranes",
+        "Loaders",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "liugong",
+    "name": {
+      "ru": "LiuGong",
+      "zh": "柳工",
+      "en": "LiuGong"
+    },
+    "country": "Китай",
+    "logo": "/Logos/liugong.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "LiuGong представлен в сегменте строительной и карьерной техники.",
+      "zh": "柳工相关设备用于建筑和采石场景。",
+      "en": "LiuGong equipment is used in construction and quarry applications."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Погрузчики",
+        "Экскаваторы",
+        "Фильтры"
+      ],
+      "zh": [
+        "装载机",
+        "挖掘机",
+        "滤清器"
+      ],
+      "en": [
+        "Loaders",
+        "Excavators",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "weichai",
+    "name": {
+      "ru": "Weichai",
+      "zh": "潍柴",
+      "en": "Weichai"
+    },
+    "country": "Китай",
+    "logo": "/Logos/weichai.svg",
+    "sectors": [
+      "engines"
+    ],
+    "description": {
+      "ru": "Weichai связан с дизельными двигателями, силовыми агрегатами и компонентами.",
+      "zh": "潍柴相关产品包括柴油发动机、动力总成和部件。",
+      "en": "Weichai-related products include diesel engines, powertrains, and components."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Двигатели",
+        "Турбокомпрессоры",
+        "Сервисные комплекты"
+      ],
+      "zh": [
+        "发动机",
+        "涡轮增压器",
+        "维护套件"
+      ],
+      "en": [
+        "Engines",
+        "Turbochargers",
+        "Service kits"
+      ]
+    }
+  },
+  {
+    "slug": "jenbacher",
+    "name": {
+      "ru": "Jenbacher",
+      "zh": "颜巴赫",
+      "en": "Jenbacher"
+    },
+    "country": "Австрия",
+    "logo": "/Logos/jenbacher.svg",
+    "sectors": [
+      "gas-engines"
+    ],
+    "description": {
+      "ru": "Jenbacher применяется в газопоршневых энергетических установках.",
+      "zh": "颜巴赫相关产品用于燃气发动机发电系统。",
+      "en": "Jenbacher-related products are used in gas engine power systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Газовые двигатели",
+        "Свечи",
+        "Фильтры"
+      ],
+      "zh": [
+        "燃气发动机",
+        "火花塞",
+        "滤清器"
+      ],
+      "en": [
+        "Gas engines",
+        "Spark plugs",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "shantui",
+    "name": {
+      "ru": "Shantui",
+      "zh": "山推",
+      "en": "Shantui"
+    },
+    "country": "Китай",
+    "logo": "/Logos/shantui.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "Shantui известен бульдозерами и дорожной техникой.",
+      "zh": "山推相关设备包括推土机和道路机械。",
+      "en": "Shantui-related equipment includes bulldozers and road machinery."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Бульдозеры",
+        "Катки",
+        "Ходовая часть"
+      ],
+      "zh": [
+        "推土机",
+        "压路机",
+        "底盘件"
+      ],
+      "en": [
+        "Bulldozers",
+        "Rollers",
+        "Undercarriage"
+      ]
+    }
+  },
+  {
+    "slug": "sany",
+    "name": {
+      "ru": "SANY",
+      "zh": "三一",
+      "en": "SANY"
+    },
+    "country": "Китай",
+    "logo": "/Logos/sany.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "SANY выпускает строительную технику, краны и бетонное оборудование.",
+      "zh": "三一相关产品包括工程机械、起重机和混凝土设备。",
+      "en": "SANY products include construction machinery, cranes, and concrete equipment."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Краны",
+        "Экскаваторы",
+        "Бетононасосы"
+      ],
+      "zh": [
+        "起重机",
+        "挖掘机",
+        "混凝土泵"
+      ],
+      "en": [
+        "Cranes",
+        "Excavators",
+        "Concrete pumps"
+      ]
+    }
+  },
+  {
+    "slug": "sinomach",
+    "name": {
+      "ru": "Sinomach",
+      "zh": "国机",
+      "en": "Sinomach"
+    },
+    "country": "Китай",
+    "logo": "/Logos/sinomach.svg",
+    "sectors": [
+      "machinery"
+    ],
+    "description": {
+      "ru": "Sinomach работает в сегменте промышленных машин и инженерного оборудования.",
+      "zh": "国机相关产品覆盖工业机械和工程设备。",
+      "en": "Sinomach-related products cover industrial machinery and engineering equipment."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Промышленные машины",
+        "Спецтехника",
+        "Запчасти"
+      ],
+      "zh": [
+        "工业机械",
+        "工程设备",
+        "备件"
+      ],
+      "en": [
+        "Industrial machinery",
+        "Heavy equipment",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "schneider-electric",
+    "name": {
+      "ru": "Schneider Electric",
+      "zh": "施耐德电气",
+      "en": "Schneider Electric"
+    },
+    "country": "Франция",
+    "logo": "/Logos/schneider-electric.svg",
+    "sectors": [
+      "electrical"
+    ],
+    "description": {
+      "ru": "Schneider Electric используется в электрораспределении и промышленной автоматизации.",
+      "zh": "施耐德电气相关产品用于配电和工业自动化。",
+      "en": "Schneider Electric products are used in power distribution and industrial automation."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Автоматы",
+        "ПЛК",
+        "Преобразователи"
+      ],
+      "zh": [
+        "断路器",
+        "PLC",
+        "变频器"
+      ],
+      "en": [
+        "Circuit breakers",
+        "PLCs",
+        "Converters"
+      ]
+    }
+  },
+  {
+    "slug": "bosch",
+    "name": {
+      "ru": "Bosch",
+      "zh": "博世",
+      "en": "Bosch"
+    },
+    "country": "Германия",
+    "logo": "/Logos/bosch.svg",
+    "sectors": [
+      "electronics"
+    ],
+    "description": {
+      "ru": "Bosch представлен промышленной электроникой, гидравликой и компонентами.",
+      "zh": "博世相关产品包括工业电子、液压和部件。",
+      "en": "Bosch-related products include industrial electronics, hydraulics, and components."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Электроника",
+        "Гидравлика",
+        "Датчики"
+      ],
+      "zh": [
+        "电子部件",
+        "液压件",
+        "传感器"
+      ],
+      "en": [
+        "Electronics",
+        "Hydraulics",
+        "Sensors"
+      ]
+    }
+  },
+  {
+    "slug": "volvo-penta",
+    "name": {
+      "ru": "Volvo Penta",
+      "zh": "沃尔沃遍达",
+      "en": "Volvo Penta"
+    },
+    "country": "Швеция",
+    "logo": "/Logos/volvo-penta.svg",
+    "sectors": [
+      "engines"
+    ],
+    "description": {
+      "ru": "Volvo Penta применяется в судовых и промышленных двигательных установках.",
+      "zh": "沃尔沃遍达相关产品用于船用和工业动力系统。",
+      "en": "Volvo Penta-related products are used in marine and industrial power systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Двигатели",
+        "Фильтры",
+        "Сервисные комплекты"
+      ],
+      "zh": [
+        "发动机",
+        "滤清器",
+        "维护套件"
+      ],
+      "en": [
+        "Engines",
+        "Filters",
+        "Service kits"
+      ]
+    }
+  },
+  {
+    "slug": "scania",
+    "name": {
+      "ru": "Scania",
+      "zh": "斯堪尼亚",
+      "en": "Scania"
+    },
+    "country": "Швеция",
+    "logo": "/Logos/scania.svg",
+    "sectors": [
+      "engines"
+    ],
+    "description": {
+      "ru": "Scania связан с промышленными и транспортными двигателями.",
+      "zh": "斯堪尼亚相关产品用于工业和运输发动机。",
+      "en": "Scania-related products are used for industrial and transport engines."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Двигатели",
+        "Топливные системы",
+        "Фильтры"
+      ],
+      "zh": [
+        "发动机",
+        "燃油系统",
+        "滤清器"
+      ],
+      "en": [
+        "Engines",
+        "Fuel systems",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "deutz",
+    "name": {
+      "ru": "Deutz",
+      "zh": "道依茨",
+      "en": "Deutz"
+    },
+    "country": "Германия",
+    "logo": "/Logos/deutz.svg",
+    "sectors": [
+      "engines"
+    ],
+    "description": {
+      "ru": "Deutz выпускает дизельные двигатели для техники и промышленных установок.",
+      "zh": "道依茨相关产品包括工程机械和工业应用柴油发动机。",
+      "en": "Deutz-related products include diesel engines for machinery and industrial systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Дизельные двигатели",
+        "Поршневые группы",
+        "Фильтры"
+      ],
+      "zh": [
+        "柴油发动机",
+        "活塞组件",
+        "滤清器"
+      ],
+      "en": [
+        "Diesel engines",
+        "Piston groups",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "perkins",
+    "name": {
+      "ru": "Perkins",
+      "zh": "珀金斯",
+      "en": "Perkins"
+    },
+    "country": "Великобритания",
+    "logo": "/Logos/perkins.svg",
+    "sectors": [
+      "engines"
+    ],
+    "description": {
+      "ru": "Perkins применяется в дизельных двигателях для спецтехники и генераторов.",
+      "zh": "珀金斯相关产品用于工程机械和发电机柴油发动机。",
+      "en": "Perkins-related products are used in diesel engines for machinery and generators."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Двигатели",
+        "Генераторные комплекты",
+        "Запчасти"
+      ],
+      "zh": [
+        "发动机",
+        "发电机套件",
+        "备件"
+      ],
+      "en": [
+        "Engines",
+        "Generator kits",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "john-deere",
+    "name": {
+      "ru": "John Deere",
+      "zh": "约翰迪尔",
+      "en": "John Deere"
+    },
+    "country": "США",
+    "logo": "/Logos/john-deere.svg",
+    "sectors": [
+      "construction",
+      "engines"
+    ],
+    "description": {
+      "ru": "John Deere используется в спецтехнике, двигателях и сельскохозяйственном оборудовании.",
+      "zh": "约翰迪尔相关产品用于工程机械、发动机和农业设备。",
+      "en": "John Deere-related products are used in machinery, engines, and agricultural equipment."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Двигатели",
+        "Спецтехника",
+        "Фильтры"
+      ],
+      "zh": [
+        "发动机",
+        "工程机械",
+        "滤清器"
+      ],
+      "en": [
+        "Engines",
+        "Heavy equipment",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "jcb",
+    "name": {
+      "ru": "JCB",
+      "zh": "JCB",
+      "en": "JCB"
+    },
+    "country": "Великобритания",
+    "logo": "/Logos/jcb.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "JCB представлен строительной техникой и компонентами для обслуживания машин.",
+      "zh": "JCB 相关产品包括工程机械和维护部件。",
+      "en": "JCB-related products include construction machinery and maintenance components."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Экскаваторы-погрузчики",
+        "Погрузчики",
+        "Гидравлика"
+      ],
+      "zh": [
+        "挖掘装载机",
+        "装载机",
+        "液压件"
+      ],
+      "en": [
+        "Backhoe loaders",
+        "Loaders",
+        "Hydraulics"
+      ]
+    }
+  },
+  {
+    "slug": "doosan",
+    "name": {
+      "ru": "Doosan",
+      "zh": "斗山",
+      "en": "Doosan"
+    },
+    "country": "Южная Корея",
+    "logo": "/Logos/doosan.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "Doosan применяется в спецтехнике, двигателях и промышленном оборудовании.",
+      "zh": "斗山相关产品用于工程机械、发动机和工业设备。",
+      "en": "Doosan-related products are used in heavy machinery, engines, and industrial equipment."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Экскаваторы",
+        "Двигатели",
+        "Фильтры"
+      ],
+      "zh": [
+        "挖掘机",
+        "发动机",
+        "滤清器"
+      ],
+      "en": [
+        "Excavators",
+        "Engines",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "hyundai-heavy-industries",
+    "name": {
+      "ru": "Hyundai Heavy Industries",
+      "zh": "现代重工",
+      "en": "Hyundai Heavy Industries"
+    },
+    "country": "Южная Корея",
+    "logo": "/Logos/hyundai-heavy-industries.svg",
+    "sectors": [
+      "construction"
+    ],
+    "description": {
+      "ru": "Hyundai Heavy Industries связан со спецтехникой и промышленными системами.",
+      "zh": "现代重工相关产品用于工程机械和工业系统。",
+      "en": "Hyundai Heavy Industries-related products are used in heavy machinery and industrial systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Экскаваторы",
+        "Погрузчики",
+        "Запчасти"
+      ],
+      "zh": [
+        "挖掘机",
+        "装载机",
+        "备件"
+      ],
+      "en": [
+        "Excavators",
+        "Loaders",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "kobelco",
+    "name": {
+      "ru": "Kobelco",
+      "zh": "神钢",
+      "en": "Kobelco"
+    },
+    "country": "Япония",
+    "logo": "/Logos/kobelco.svg",
+    "sectors": [
+      "cranes",
+      "construction"
+    ],
+    "description": {
+      "ru": "Kobelco применяется в сегментах кранов, экскаваторов и спецтехники.",
+      "zh": "神钢相关设备用于起重机、挖掘机和工程机械。",
+      "en": "Kobelco-related equipment is used in cranes, excavators, and heavy machinery."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Краны",
+        "Экскаваторы",
+        "Ходовая часть"
+      ],
+      "zh": [
+        "起重机",
+        "挖掘机",
+        "底盘件"
+      ],
+      "en": [
+        "Cranes",
+        "Excavators",
+        "Undercarriage"
+      ]
+    }
+  },
+  {
+    "slug": "atlas-copco",
+    "name": {
+      "ru": "Atlas Copco",
+      "zh": "阿特拉斯·科普柯",
+      "en": "Atlas Copco"
+    },
+    "country": "Швеция",
+    "logo": "/Logos/atlas-copco.svg",
+    "sectors": [
+      "compressors"
+    ],
+    "description": {
+      "ru": "Atlas Copco представлен компрессорным, вакуумным и промышленным оборудованием.",
+      "zh": "阿特拉斯·科普柯相关产品包括压缩机、真空和工业设备。",
+      "en": "Atlas Copco-related products include compressors, vacuum, and industrial equipment."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Компрессоры",
+        "Осушители",
+        "Фильтры"
+      ],
+      "zh": [
+        "压缩机",
+        "干燥机",
+        "滤清器"
+      ],
+      "en": [
+        "Compressors",
+        "Dryers",
+        "Filters"
+      ]
+    }
+  },
+  {
+    "slug": "sandvik",
+    "name": {
+      "ru": "Sandvik",
+      "zh": "山特维克",
+      "en": "Sandvik"
+    },
+    "country": "Швеция",
+    "logo": "/Logos/sandvik.svg",
+    "sectors": [
+      "mining"
+    ],
+    "description": {
+      "ru": "Sandvik используется в горном оборудовании, дроблении и инструменте.",
+      "zh": "山特维克相关产品用于采矿设备、破碎和工具。",
+      "en": "Sandvik-related products are used in mining equipment, crushing, and tooling."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Горное оборудование",
+        "Дробилки",
+        "Инструмент"
+      ],
+      "zh": [
+        "采矿设备",
+        "破碎机",
+        "工具"
+      ],
+      "en": [
+        "Mining equipment",
+        "Crushers",
+        "Tooling"
+      ]
+    }
+  },
+  {
+    "slug": "metso",
+    "name": {
+      "ru": "Metso",
+      "zh": "美卓",
+      "en": "Metso"
+    },
+    "country": "Финляндия",
+    "logo": "/Logos/metso.svg",
+    "sectors": [
+      "crushing"
+    ],
+    "description": {
+      "ru": "Metso связан с дробильным, сортировочным и перерабатывающим оборудованием.",
+      "zh": "美卓相关产品用于破碎、筛分和加工设备。",
+      "en": "Metso-related products are used in crushing, screening, and processing equipment."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Дробилки",
+        "Грохоты",
+        "Изнашиваемые части"
+      ],
+      "zh": [
+        "破碎机",
+        "筛分机",
+        "耐磨件"
+      ],
+      "en": [
+        "Crushers",
+        "Screens",
+        "Wear parts"
+      ]
+    }
+  },
+  {
+    "slug": "fanuc",
+    "name": {
+      "ru": "FANUC",
+      "zh": "发那科",
+      "en": "FANUC"
+    },
+    "country": "Япония",
+    "logo": "/Logos/fanuc.svg",
+    "sectors": [
+      "robotics"
+    ],
+    "description": {
+      "ru": "FANUC применяется в промышленной робототехнике и станочной автоматизации.",
+      "zh": "发那科相关产品用于工业机器人和机床自动化。",
+      "en": "FANUC-related products are used in industrial robotics and machine automation."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Промышленные роботы",
+        "ЧПУ",
+        "Сервоприводы"
+      ],
+      "zh": [
+        "工业机器人",
+        "数控系统",
+        "伺服驱动"
+      ],
+      "en": [
+        "Industrial robots",
+        "CNC",
+        "Servo drives"
+      ]
+    }
+  },
+  {
+    "slug": "kuka",
+    "name": {
+      "ru": "KUKA",
+      "zh": "库卡",
+      "en": "KUKA"
+    },
+    "country": "Германия",
+    "logo": "/Logos/kuka.svg",
+    "sectors": [
+      "robotics"
+    ],
+    "description": {
+      "ru": "KUKA представлен промышленными роботами и системами автоматизации.",
+      "zh": "库卡相关产品包括工业机器人和自动化系统。",
+      "en": "KUKA-related products include industrial robots and automation systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Роботы",
+        "Контроллеры",
+        "Манипуляторы"
+      ],
+      "zh": [
+        "机器人",
+        "控制器",
+        "机械臂"
+      ],
+      "en": [
+        "Robots",
+        "Controllers",
+        "Manipulators"
+      ]
+    }
+  },
+  {
+    "slug": "skf",
+    "name": {
+      "ru": "SKF",
+      "zh": "斯凯孚",
+      "en": "SKF"
+    },
+    "country": "Швеция",
+    "logo": "/Logos/skf.svg",
+    "sectors": [
+      "bearings"
+    ],
+    "description": {
+      "ru": "SKF связан с подшипниками, уплотнениями и системами смазки.",
+      "zh": "SKF 相关产品包括轴承、密封件和润滑系统。",
+      "en": "SKF-related products include bearings, seals, and lubrication systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Подшипники",
+        "Уплотнения",
+        "Смазка"
+      ],
+      "zh": [
+        "轴承",
+        "密封件",
+        "润滑"
+      ],
+      "en": [
+        "Bearings",
+        "Seals",
+        "Lubrication"
+      ]
+    }
+  },
+  {
+    "slug": "schaeffler",
+    "name": {
+      "ru": "Schaeffler",
+      "zh": "舍弗勒",
+      "en": "Schaeffler"
+    },
+    "country": "Германия",
+    "logo": "/Logos/schaeffler.svg",
+    "sectors": [
+      "bearings"
+    ],
+    "description": {
+      "ru": "Schaeffler включает направления FAG и INA для подшипниковых решений.",
+      "zh": "舍弗勒包含 FAG 和 INA 等轴承解决方案。",
+      "en": "Schaeffler includes FAG and INA bearing solution lines."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Подшипники",
+        "Линейные системы",
+        "Узлы"
+      ],
+      "zh": [
+        "轴承",
+        "直线系统",
+        "组件"
+      ],
+      "en": [
+        "Bearings",
+        "Linear systems",
+        "Assemblies"
+      ]
+    }
+  },
+  {
+    "slug": "parker-hannifin",
+    "name": {
+      "ru": "Parker Hannifin",
+      "zh": "派克汉尼汾",
+      "en": "Parker Hannifin"
+    },
+    "country": "США",
+    "logo": "/Logos/parker-hannifin.svg",
+    "sectors": [
+      "hydraulics"
+    ],
+    "description": {
+      "ru": "Parker Hannifin применяется в гидравлике, пневматике и управлении потоками.",
+      "zh": "派克汉尼汾相关产品用于液压、气动和流体控制。",
+      "en": "Parker Hannifin products are used in hydraulics, pneumatics, and flow control."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Гидравлика",
+        "Пневматика",
+        "Шланги"
+      ],
+      "zh": [
+        "液压件",
+        "气动件",
+        "软管"
+      ],
+      "en": [
+        "Hydraulics",
+        "Pneumatics",
+        "Hoses"
+      ]
+    }
+  },
+  {
+    "slug": "eaton",
+    "name": {
+      "ru": "Eaton",
+      "zh": "伊顿",
+      "en": "Eaton"
+    },
+    "country": "США/Ирландия",
+    "logo": "/Logos/eaton.svg",
+    "sectors": [
+      "electrical",
+      "hydraulics"
+    ],
+    "description": {
+      "ru": "Eaton представлен электрооборудованием, гидравликой и компонентами управления.",
+      "zh": "伊顿相关产品包括电气设备、液压和控制部件。",
+      "en": "Eaton-related products include electrical equipment, hydraulics, and control components."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Электрооборудование",
+        "Гидравлика",
+        "Автоматы"
+      ],
+      "zh": [
+        "电气设备",
+        "液压件",
+        "断路器"
+      ],
+      "en": [
+        "Electrical equipment",
+        "Hydraulics",
+        "Breakers"
+      ]
+    }
+  },
+  {
+    "slug": "rockwell-automation",
+    "name": {
+      "ru": "Rockwell Automation",
+      "zh": "罗克韦尔自动化",
+      "en": "Rockwell Automation"
+    },
+    "country": "США",
+    "logo": "/Logos/rockwell-automation.svg",
+    "sectors": [
+      "automation"
+    ],
+    "description": {
+      "ru": "Rockwell Automation применяется в промышленной автоматизации и управлении.",
+      "zh": "罗克韦尔自动化相关产品用于工业自动化和控制。",
+      "en": "Rockwell Automation products are used in industrial automation and control."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "ПЛК",
+        "Приводы",
+        "HMI"
+      ],
+      "zh": [
+        "PLC",
+        "驱动器",
+        "人机界面"
+      ],
+      "en": [
+        "PLCs",
+        "Drives",
+        "HMI"
+      ]
+    }
+  },
+  {
+    "slug": "ge",
+    "name": {
+      "ru": "GE",
+      "zh": "通用电气",
+      "en": "GE"
+    },
+    "country": "США",
+    "logo": "/Logos/ge.svg",
+    "sectors": [
+      "energy",
+      "turbines"
+    ],
+    "description": {
+      "ru": "GE связан с энергетикой, турбинами и промышленными компонентами.",
+      "zh": "GE 相关产品用于能源、涡轮和工业部件。",
+      "en": "GE-related products are used in energy, turbines, and industrial components."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Турбины",
+        "Энергетика",
+        "Запчасти"
+      ],
+      "zh": [
+        "涡轮",
+        "能源设备",
+        "备件"
+      ],
+      "en": [
+        "Turbines",
+        "Energy equipment",
+        "Spare parts"
+      ]
+    }
+  },
+  {
+    "slug": "wartsila",
+    "name": {
+      "ru": "Wärtsilä",
+      "zh": "瓦锡兰",
+      "en": "Wärtsilä"
+    },
+    "country": "Финляндия",
+    "logo": "/Logos/wartsila.svg",
+    "sectors": [
+      "marine",
+      "engines"
+    ],
+    "description": {
+      "ru": "Wärtsilä применяется в судовых и стационарных энергетических установках.",
+      "zh": "瓦锡兰相关产品用于船用和固定式发电系统。",
+      "en": "Wärtsilä-related products are used in marine and stationary power systems."
+    },
+    "equipmentTypes": {
+      "ru": [
+        "Судовые двигатели",
+        "Генераторы",
+        "Сервисные комплекты"
+      ],
+      "zh": [
+        "船用发动机",
+        "发电机",
+        "维护套件"
+      ],
+      "en": [
+        "Marine engines",
+        "Generators",
+        "Service kits"
+      ]
+    }
+  }
+]
