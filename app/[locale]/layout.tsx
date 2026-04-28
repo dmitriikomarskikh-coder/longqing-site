@@ -30,7 +30,15 @@ export const metadata: Metadata = {
     default: "Longqing Trade"
   },
   description:
-    "Independent supply and service of industrial equipment and compatible spare parts worldwide."
+    "Independent supply and service of industrial equipment and compatible spare parts worldwide.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+    other: [
+      {rel: "icon", url: "/icon-192.png", sizes: "192x192", type: "image/png"},
+      {rel: "icon", url: "/icon-512.png", sizes: "512x512", type: "image/png"}
+    ]
+  }
 };
 
 export function generateStaticParams() {

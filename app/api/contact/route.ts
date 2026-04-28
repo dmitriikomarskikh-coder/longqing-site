@@ -49,11 +49,11 @@ const fileSchema = z.object({
 });
 
 const submissionSchema = z.object({
-  name: optionalText(80).refine((value) => !value || value.length >= 2),
+  name: z.string().trim().min(2).max(80),
   company: optionalText(120).refine((value) => !value || value.length >= 2),
-  phone: z.string().trim().refine((value) => isValidPhoneNumber(value)),
+  phone: optionalText(80).refine((value) => !value || isValidPhoneNumber(value)),
   email: z.string().trim().email(),
-  message: z.string().trim().min(10).max(4000),
+  message: optionalText(4000),
   locale: z.enum(["ru", "zh", "en"]).optional(),
   consent: z.union([z.literal(true), z.literal("true")]),
   brand: optionalText(120),
@@ -164,9 +164,9 @@ export async function POST(request: Request) {
     const payload: SubmissionPayload = {
       name: parsed.data.name,
       company: parsed.data.company,
-      phone: parsed.data.phone,
+      phone: parsed.data.phone ?? "",
       email: parsed.data.email,
-      message: parsed.data.message,
+      message: parsed.data.message ?? "",
       locale: parsed.data.locale,
       brand: parsed.data.brand,
       pageUrl: parsed.data.pageUrl,

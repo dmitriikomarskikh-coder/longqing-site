@@ -40,7 +40,6 @@ const labels: Record<
       name: string;
       phone: string;
       email: string;
-      message: string;
       consent: string;
     };
   }
@@ -66,8 +65,7 @@ const labels: Record<
       name: "Укажите имя",
       phone: "Укажите корректный номер телефона",
       email: "Укажите корректный e-mail",
-      message: "Опишите задачу подробнее",
-      consent: "Необходимо согласие на обработку персональных данных"
+      consent: "Подтвердите согласие на обработку персональных данных"
     }
   },
   zh: {
@@ -89,7 +87,6 @@ const labels: Record<
       name: "请输入姓名",
       phone: "请输入正确的电话",
       email: "请输入正确的邮箱",
-      message: "请更详细描述需求",
       consent: "需要同意处理个人数据"
     }
   },
@@ -113,7 +110,6 @@ const labels: Record<
       name: "Enter your name",
       phone: "Enter a valid phone number",
       email: "Enter a valid e-mail",
-      message: "Describe the task in more detail",
       consent: "Personal data processing consent is required"
     }
   }
@@ -136,11 +132,11 @@ export function ContactForm({
     () =>
       z.object({
         name: z.string().trim().min(2, text.errors.name).max(80, text.errors.name),
-        phone: z.string().trim().refine((value) => isValidPhoneNumber(value), {
+        phone: z.string().trim().refine((value) => !value || isValidPhoneNumber(value), {
           message: text.errors.phone
         }),
         email: z.string().trim().email(text.errors.email),
-        message: z.string().trim().min(10, text.errors.message).max(4000, text.errors.message),
+        message: z.string().trim().max(4000),
         consent: z.boolean().refine(Boolean, text.errors.consent),
         website: z.string().max(0).optional()
       }),
@@ -165,6 +161,8 @@ export function ContactForm({
     resolver: zodResolver(formSchema),
     defaultValues: {consent: false, message: initialMessage ?? ""}
   });
+
+  const requiredMark = <span className="text-accent" aria-hidden="true">*</span>;
 
   async function onSubmit(values: ContactFormValues) {
     setStatus("idle");
@@ -224,7 +222,7 @@ export function ContactForm({
         >
           <input className="hidden" tabIndex={-1} autoComplete="off" {...register("website")} />
           <label className="grid gap-2 text-sm text-muted">
-            {text.name}
+            <span>{text.name} {requiredMark}</span>
             <input
               className="h-12 rounded border border-white/10 bg-dark px-3 text-text outline-none transition focus:border-accent"
               {...register("name")}
@@ -241,7 +239,7 @@ export function ContactForm({
             {errors.phone ? <span className="text-xs text-[#dc2626]">{errors.phone.message}</span> : null}
           </label>
           <label className="grid gap-2 text-sm text-muted md:col-span-2">
-            {text.email}
+            <span>{text.email} {requiredMark}</span>
             <input
               className="h-12 rounded border border-white/10 bg-dark px-3 text-text outline-none transition focus:border-accent"
               {...register("email")}
@@ -278,7 +276,7 @@ export function ContactForm({
               <Link href={`/${locale}/privacy`} className="text-accent underline-offset-4 hover:underline">
                 {text.consentLink}
               </Link>
-              .
+              . {requiredMark}
             </span>
           </label>
           {errors.consent ? (
