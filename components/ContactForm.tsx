@@ -196,7 +196,7 @@ export function ContactForm({
   }
 
   return (
-    <section id="contact" className="bg-dark px-5 py-20">
+    <section id="contact" className="bg-dark px-5 pb-[60px] pt-[60px]">
       <span id="contact-form" className="block scroll-mt-24" />
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr]">
         <div>

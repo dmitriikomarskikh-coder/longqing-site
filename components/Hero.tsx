@@ -35,7 +35,7 @@ export function Hero({locale, variant, src, poster}: HeroProps) {
   const text = copy[locale];
 
   return (
-    <section className="relative flex min-h-[680px] items-center overflow-hidden bg-dark px-5 py-24 md:min-h-[82vh] lg:min-h-[760px]">
+    <section className="relative flex min-h-[680px] items-center overflow-hidden bg-dark px-5 pb-[60px] pt-[60px] md:min-h-[82vh] lg:min-h-[760px]">
       {variant === "video" ? (
         <video
           className="absolute inset-0 size-full object-cover"

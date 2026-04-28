@@ -4,7 +4,7 @@ import type {Locale} from "@/i18n/routing";
 
 export function ChinaStock({locale}: {locale: Locale}) {
   return (
-    <section className="bg-dark-2 px-5 py-20">
+    <section className="bg-dark-2 px-5 pb-[60px] pt-[60px]">
       <div className="mx-auto max-w-7xl">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">

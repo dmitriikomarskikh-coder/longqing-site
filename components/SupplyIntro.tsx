@@ -58,7 +58,7 @@ const cards = [
 
 export function SupplyIntro({locale}: {locale: Locale}) {
   return (
-    <section className="bg-[#f3f5f6] px-5 py-20 text-dark">
+    <section className="bg-[#f3f5f6] px-5 pb-[60px] pt-[60px] text-dark">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
           <div>

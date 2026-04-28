@@ -27,7 +27,7 @@ export function BrandsCarousel({
   );
 
   return (
-    <section className="overflow-hidden bg-[#f5f5f5] px-5 py-20 text-dark">
+    <section className="overflow-hidden bg-[#f5f5f5] px-5 pb-[60px] pt-[60px] text-dark">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>

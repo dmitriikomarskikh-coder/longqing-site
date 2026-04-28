@@ -27,7 +27,7 @@ export function WorldMap({
   geography: Geography;
 }) {
   return (
-    <section className="bg-dark px-5 py-20">
+    <section className="bg-dark px-5 pb-[60px] pt-[60px]">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">

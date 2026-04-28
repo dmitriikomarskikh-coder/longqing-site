@@ -10,7 +10,7 @@ export function NewsTeaser({
   items: NewsItem[];
 }) {
   return (
-    <section className="bg-light px-5 py-20 text-dark">
+    <section className="bg-light px-5 pb-[60px] pt-[60px] text-dark">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
