@@ -148,6 +148,34 @@ function safeNotificationResult(result: PromiseSettledResult<unknown>) {
   };
 }
 
+async function sendNotifications(payload: SubmissionPayload) {
+  try {
+    await sendEmail(payload);
+  } catch (error) {
+    await appendJsonl(path.join(logRoot(), "notifications.log"), {
+      requestId: payload.requestId,
+      createdAt: payload.createdAt,
+      channel: "email",
+      status: "failed",
+      reason: isSmtpConfigurationError(error) ? "SMTP configuration is incomplete" : "Email delivery failed"
+    });
+  }
+
+  const results = await Promise.allSettled([
+    sendTelegram(payload),
+    sendWeChat(payload),
+    sendDingTalk(payload),
+    sendCrm(payload)
+  ]);
+
+  await appendJsonl(path.join(logRoot(), "notifications.log"), {
+    requestId: payload.requestId,
+    createdAt: payload.createdAt,
+    channel: "optional",
+    results: results.map(safeNotificationResult)
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get("content-type") ?? "";
@@ -197,29 +225,11 @@ export async function POST(request: Request) {
     };
 
     await appendJsonl(path.join(logRoot(), "contact-requests.jsonl"), contactRequest);
-
-    try {
-      await sendEmail(payload);
-    } catch (error) {
-      await appendJsonl(path.join(logRoot(), "notifications.log"), {
-        createdAt,
-        channel: "email",
-        status: "failed",
-        reason: isSmtpConfigurationError(error) ? "SMTP configuration is incomplete" : "Email delivery failed"
+    void sendNotifications(payload).catch((error) => {
+      console.error("Contact notification failed", {
+        requestId,
+        message: error instanceof Error ? error.message : "Notification failed"
       });
-    }
-
-    const results = await Promise.allSettled([
-      sendTelegram(payload),
-      sendWeChat(payload),
-      sendDingTalk(payload),
-      sendCrm(payload)
-    ]);
-
-    await appendJsonl(path.join(logRoot(), "notifications.log"), {
-      createdAt,
-      channel: "optional",
-      results: results.map(safeNotificationResult)
     });
 
     return NextResponse.json({ok: true, requestId});
