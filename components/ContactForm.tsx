@@ -32,6 +32,7 @@ const labels: Record<
     consentPrefix: string;
     consentLink: string;
     submit: string;
+    sending: string;
     microcopy: string;
     success: string;
     error: string;
@@ -57,9 +58,10 @@ const labels: Record<
       "Я согласен на обработку персональных данных и принимаю",
     consentLink: "Политику конфиденциальности",
     submit: "Получить КП",
+    sending: "Отправляем...",
     microcopy: "Ответим в течение 1 рабочего дня.",
-    success: "Заявка отправлена",
-    error: "Не удалось отправить заявку",
+    success: "Заявка отправлена. Мы свяжемся с вами в течение 1 рабочего дня.",
+    error: "Не удалось отправить заявку. Проверьте данные и попробуйте ещё раз.",
     errors: {
       name: "Укажите имя",
       phone: "Укажите корректный номер телефона",
@@ -79,9 +81,10 @@ const labels: Record<
     consentPrefix: "我同意处理个人数据并接受",
     consentLink: "隐私政策",
     submit: "获取报价",
+    sending: "正在发送...",
     microcopy: "我们将在 1 个工作日内回复。",
-    success: "需求已发送",
-    error: "发送失败",
+    success: "需求已发送。我们将在 1 个工作日内联系您。",
+    error: "发送失败。请检查信息后重试。",
     errors: {
       name: "请输入姓名",
       phone: "请输入正确的电话",
@@ -102,9 +105,10 @@ const labels: Record<
     consentPrefix: "I consent to personal data processing and accept the",
     consentLink: "Privacy Policy",
     submit: "Get proposal",
+    sending: "Sending...",
     microcopy: "We will respond within 1 business day.",
-    success: "Request sent",
-    error: "Could not send request",
+    success: "Request sent. We will contact you within 1 business day.",
+    error: "Could not send request. Please check the details and try again.",
     errors: {
       name: "Enter your name",
       phone: "Enter a valid phone number",
@@ -164,35 +168,41 @@ export function ContactForm({
 
   async function onSubmit(values: ContactFormValues) {
     setStatus("idle");
-    const formData = new FormData();
-    Object.entries(values).forEach(([key, value]) => {
-      formData.append(key, String(value));
-    });
-    formData.append("locale", locale);
-    formData.append("sourceUrl", pathname);
-    formData.append("utm", JSON.stringify(utm));
-    if (brand) {
-      formData.append("brand", brand);
-    }
-
     const input = document.querySelector<HTMLInputElement>("#files");
-    Array.from(input?.files ?? []).forEach((file) => {
-      formData.append("files", file);
-    });
+    const files = Array.from(input?.files ?? []).map((file) => ({
+      originalName: file.name,
+      size: file.size
+    }));
 
-    const response = await fetch("/api/contact", {
-      method: "POST",
-      body: formData
-    });
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          ...values,
+          locale,
+          pageUrl: window.location.href,
+          sourceUrl: pathname,
+          formSource: brand ? "brand_contact_form" : "contact_form",
+          brand,
+          utm,
+          files
+        })
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        setStatus("error");
+        return;
+      }
+
+      setStatus("success");
+      reset();
+      if (input) {
+        input.value = "";
+      }
+    } catch {
       setStatus("error");
-      return;
     }
-
-    setStatus("success");
-    reset();
-    window.location.href = `/${locale}/thanks`;
   }
 
   return (
@@ -282,7 +292,7 @@ export function ContactForm({
               disabled={isSubmitting}
               className="btn-primary h-12 px-6 text-sm"
             >
-              {text.submit}
+              {isSubmitting ? text.sending : text.submit}
             </button>
             {status === "success" ? (
               <span className="text-sm text-accent-2">{text.success}</span>
