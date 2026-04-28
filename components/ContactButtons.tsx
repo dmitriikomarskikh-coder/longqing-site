@@ -24,11 +24,11 @@ const labels: Record<Locale, {title: string; telegram: string; wechat: string; m
 export function ContactButtons({locale, compact = false}: {locale: Locale; compact?: boolean}) {
   const text = labels[locale];
   const className = compact
-    ? "btn-contact h-9 px-3 text-[13px]"
-    : "btn-contact h-10 px-4 text-sm";
+    ? "btn-contact h-9 whitespace-nowrap px-3 text-[13px]"
+    : "btn-contact h-10 whitespace-nowrap px-4 text-sm";
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={compact ? "flex flex-nowrap items-center gap-2" : "flex flex-wrap items-center gap-2"}>
       {!compact ? <span className="mr-1 text-sm text-muted">{text.title}</span> : null}
       <a href="#" aria-label={`${text.title}: Telegram`} className={className}>
         {text.telegram}

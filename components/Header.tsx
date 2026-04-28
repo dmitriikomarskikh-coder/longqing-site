@@ -48,7 +48,7 @@ export function Header({locale}: {locale: Locale}) {
             className="h-8 w-auto max-w-[158px] object-contain md:h-9 md:max-w-[178px]"
           />
         </Link>
-        <nav className="hidden items-center gap-7 text-sm font-medium text-text md:flex">
+        <nav className="hidden shrink-0 items-center gap-6 text-sm font-medium text-text xl:flex">
           <Link className="transition hover:text-accent" href={`/${locale}`}>
             {nav.home}
           </Link>
@@ -62,7 +62,7 @@ export function Header({locale}: {locale: Locale}) {
             {nav.contacts}
           </Link>
         </nav>
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden shrink-0 items-center gap-3 xl:flex">
           <Link href={`/${locale}#contact`} className="btn-primary h-9 px-3 text-[13px]">
             {nav.quote}
           </Link>
@@ -93,48 +93,50 @@ export function Header({locale}: {locale: Locale}) {
         <button
           type="button"
           aria-label="Menu"
-          className="grid size-10 place-items-center rounded border border-white/10 text-text md:hidden"
+          className="grid size-10 place-items-center rounded border border-white/10 text-text xl:hidden"
           onClick={() => setIsOpen((value) => !value)}
         >
-          {isOpen ? <X size={20} /> : <Menu size={20} />}
+          {isOpen ? <X size={24} strokeWidth={2.2} /> : <Menu size={24} strokeWidth={2.2} />}
         </button>
       </div>
       {isOpen ? (
-        <div className="mx-auto grid max-w-7xl gap-4 pb-5 text-sm font-medium text-text md:hidden">
-          <Link href={`/${locale}`} onClick={() => setIsOpen(false)}>
-            {nav.home}
-          </Link>
-          <Link href={`/${locale}/brands`} onClick={() => setIsOpen(false)}>
-            {nav.brands}
-          </Link>
-          <Link href={`/${locale}/news`} onClick={() => setIsOpen(false)}>
-            {nav.news}
-          </Link>
-          <Link href={`/${locale}/contacts`} onClick={() => setIsOpen(false)}>
-            {nav.contacts}
-          </Link>
-          <Link
-            href={`/${locale}#contact`}
-            className="btn-primary h-11 px-4 text-sm"
-            onClick={() => setIsOpen(false)}
-          >
-            {nav.quote}
-          </Link>
-          <div className="flex gap-2">
-            {locales.map((item) => (
-              <Link
-                key={item}
-                href={localizedPath(item)}
-                className={cn(
-                  "rounded border border-white/10 px-3 py-2 uppercase",
-                  item === locale && "border-accent text-accent"
-                )}
-              >
-                {item}
-              </Link>
-            ))}
+        <div className="mx-[-20px] border-b border-accent/35 bg-dark-2/95 px-5 pb-5 pt-2 shadow-[0_20px_45px_rgba(0,0,0,0.36)] backdrop-blur xl:hidden">
+          <div className="mx-auto grid max-w-7xl gap-4 text-sm font-medium text-text">
+            <Link href={`/${locale}`} onClick={() => setIsOpen(false)}>
+              {nav.home}
+            </Link>
+            <Link href={`/${locale}/brands`} onClick={() => setIsOpen(false)}>
+              {nav.brands}
+            </Link>
+            <Link href={`/${locale}/news`} onClick={() => setIsOpen(false)}>
+              {nav.news}
+            </Link>
+            <Link href={`/${locale}/contacts`} onClick={() => setIsOpen(false)}>
+              {nav.contacts}
+            </Link>
+            <Link
+              href={`/${locale}#contact`}
+              className="btn-primary h-11 px-4 text-sm"
+              onClick={() => setIsOpen(false)}
+            >
+              {nav.quote}
+            </Link>
+            <div className="flex gap-2">
+              {locales.map((item) => (
+                <Link
+                  key={item}
+                  href={localizedPath(item)}
+                  className={cn(
+                    "rounded border border-white/10 px-3 py-2 uppercase",
+                    item === locale && "border-accent text-accent"
+                  )}
+                >
+                  {item}
+                </Link>
+              ))}
+            </div>
+            <ContactButtons locale={locale} />
           </div>
-          <ContactButtons locale={locale} />
         </div>
       ) : null}
     </header>
