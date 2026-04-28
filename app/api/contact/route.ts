@@ -77,8 +77,8 @@ function monthKey() {
   return new Date().toISOString().slice(0, 7);
 }
 
-function dayKey() {
-  return new Date().toISOString().slice(0, 10);
+function createRequestId() {
+  return `${Date.now()}-${randomUUID().slice(0, 8)}`;
 }
 
 async function appendJsonl(filePath: string, value: unknown) {
@@ -161,7 +161,9 @@ export async function POST(request: Request) {
     }
 
     const createdAt = new Date().toISOString();
+    const requestId = createRequestId();
     const payload: SubmissionPayload = {
+      requestId,
       name: parsed.data.name,
       company: parsed.data.company,
       phone: parsed.data.phone ?? "",
@@ -176,10 +178,25 @@ export async function POST(request: Request) {
       files: parsed.data.files ?? []
     };
 
-    await appendJsonl(path.join(logRoot(), "submissions", `${dayKey()}.jsonl`), {
-      ...payload,
-      utm: parsed.data.utm
-    });
+    const contactRequest = {
+      requestId,
+      createdAt,
+      name: parsed.data.name,
+      company: parsed.data.company,
+      phone: parsed.data.phone ?? "",
+      email: parsed.data.email,
+      message: parsed.data.message ?? "",
+      locale: parsed.data.locale,
+      pageUrl: parsed.data.pageUrl,
+      sourceUrl: parsed.data.sourceUrl,
+      formSource: parsed.data.formSource,
+      brand: parsed.data.brand,
+      utm: parsed.data.utm,
+      files: parsed.data.files ?? [],
+      consent: parsed.data.consent === true || parsed.data.consent === "true"
+    };
+
+    await appendJsonl(path.join(logRoot(), "contact-requests.jsonl"), contactRequest);
 
     try {
       await sendEmail(payload);
@@ -190,16 +207,6 @@ export async function POST(request: Request) {
         status: "failed",
         reason: isSmtpConfigurationError(error) ? "SMTP configuration is incomplete" : "Email delivery failed"
       });
-
-      return NextResponse.json(
-        {
-          ok: false,
-          error: isSmtpConfigurationError(error)
-            ? "Email notifications are not configured"
-            : "Could not send request"
-        },
-        {status: 500}
-      );
     }
 
     const results = await Promise.allSettled([
@@ -215,7 +222,7 @@ export async function POST(request: Request) {
       results: results.map(safeNotificationResult)
     });
 
-    return NextResponse.json({ok: true});
+    return NextResponse.json({ok: true, requestId});
   } catch (error) {
     await appendJsonl(path.join(logRoot(), "notifications.log"), {
       createdAt: new Date().toISOString(),

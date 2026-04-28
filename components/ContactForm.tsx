@@ -59,7 +59,7 @@ const labels: Record<
     submit: "Получить КП",
     sending: "Отправляем...",
     microcopy: "Ответим в течение 1 рабочего дня.",
-    success: "Заявка отправлена. Мы свяжемся с вами в течение 1 рабочего дня.",
+    success: "Спасибо, заявка отправлена. Мы свяжемся с вами в течение 1 рабочего дня.",
     error: "Не удалось отправить заявку. Проверьте данные и попробуйте ещё раз.",
     errors: {
       name: "Укажите имя",
@@ -81,7 +81,7 @@ const labels: Record<
     submit: "获取报价",
     sending: "正在发送...",
     microcopy: "我们将在 1 个工作日内回复。",
-    success: "需求已发送。我们将在 1 个工作日内联系您。",
+    success: "谢谢，需求已发送。我们将在 1 个工作日内联系您。",
     error: "发送失败。请检查信息后重试。",
     errors: {
       name: "请输入姓名",
@@ -104,7 +104,7 @@ const labels: Record<
     submit: "Get proposal",
     sending: "Sending...",
     microcopy: "We will respond within 1 business day.",
-    success: "Request sent. We will contact you within 1 business day.",
+    success: "Thank you, request sent. We will contact you within 1 business day.",
     error: "Could not send request. Please check the details and try again.",
     errors: {
       name: "Enter your name",
@@ -271,12 +271,13 @@ export function ContactForm({
           </label>
           <label className="flex gap-3 text-sm leading-6 text-muted md:col-span-2">
             <input type="checkbox" className="mt-1 size-4 accent-accent" {...register("consent")} />
+            <span className="text-accent" aria-hidden="true">*</span>
             <span>
               {text.consentPrefix}{" "}
               <Link href={`/${locale}/privacy`} className="text-accent underline-offset-4 hover:underline">
                 {text.consentLink}
               </Link>
-              . {requiredMark}
+              .
             </span>
           </label>
           {errors.consent ? (

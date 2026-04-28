@@ -7,6 +7,7 @@ export type SubmissionFile = {
 };
 
 export type SubmissionPayload = {
+  requestId?: string;
   name?: string;
   company?: string;
   phone: string;
