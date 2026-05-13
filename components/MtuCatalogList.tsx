@@ -1,0 +1,165 @@
+"use client";
+
+import Link from "next/link";
+import {useMemo, useState} from "react";
+import type {MtuPart} from "@/content/mtu-parts";
+import type {Locale} from "@/i18n/routing";
+
+const labels = {
+  ru: {
+    search: "Поиск по артикулу или названию",
+    category: "Категория",
+    allCategories: "Все категории",
+    partNumber: "Артикул",
+    price: "Цена по запросу",
+    details: "Подробнее",
+    quote: "Запросить КП",
+    empty: "Позиции не найдены. Попробуйте изменить запрос или категорию.",
+    reducedDescription:
+      "Позиция доступна для обработки B2B-запроса. Описание, применимость, цену и срок поставки уточним по артикулу и данным оборудования."
+  },
+  en: {
+    search: "Search by part number or name",
+    category: "Category",
+    allCategories: "All categories",
+    partNumber: "Part number",
+    price: "Price on request",
+    details: "Details",
+    quote: "Request proposal",
+    empty: "No parts found. Try changing the search query or category.",
+    reducedDescription:
+      "This item is available for B2B request processing. Description, applicability, price, and lead time are confirmed by part number and equipment data."
+  },
+  zh: {
+    search: "按零件号或名称搜索",
+    category: "类别",
+    allCategories: "全部类别",
+    partNumber: "零件号",
+    price: "价格按请求确认",
+    details: "详情",
+    quote: "获取报价",
+    empty: "未找到相关项目。请更改搜索词或类别。",
+    reducedDescription:
+      "该项目可处理 B2B 询价。描述、适用性、价格和交期将根据零件号和设备信息确认。"
+  }
+} satisfies Record<Locale, Record<string, string>>;
+
+function partName(part: MtuPart, locale: Locale) {
+  return locale === "ru" ? part.nameRu : part.nameEn;
+}
+
+function partDescription(part: MtuPart, locale: Locale) {
+  if (part.isReducedCard) {
+    return labels[locale].reducedDescription;
+  }
+
+  if (locale === "ru") {
+    return part.shortDescriptionRu;
+  }
+
+  if (locale === "zh") {
+    return `MTU ${part.partNumber} 可按 B2B 请求处理。适用性、价格和交期将根据设备信息确认。`;
+  }
+
+  return `MTU ${part.partNumber} is available for B2B sourcing. Applicability, price, and lead time are confirmed by equipment data.`;
+}
+
+export function MtuCatalogList({locale, parts}: {locale: Locale; parts: MtuPart[]}) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
+  const text = labels[locale];
+  const categories = useMemo(
+    () => Array.from(new Set(parts.map((part) => part.category))).sort((a, b) => a.localeCompare(b)),
+    [parts]
+  );
+  const filteredParts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return parts.filter((part) => {
+      const matchesCategory = category === "all" || part.category === category;
+      const searchable = `${part.partNumber} ${part.nameRu} ${part.nameEn}`.toLowerCase();
+      const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
+
+      return matchesCategory && matchesQuery;
+    });
+  }, [category, parts, query]);
+
+  return (
+    <div>
+      <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_280px]">
+        <label className="grid gap-2 text-sm font-medium text-slate-700">
+          {text.search}
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-slate-950 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            type="search"
+          />
+        </label>
+        <label className="grid gap-2 text-sm font-medium text-slate-700">
+          {text.category}
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-slate-950 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+          >
+            <option value="all">{text.allCategories}</option>
+            {categories.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {filteredParts.length ? (
+        <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredParts.map((part) => (
+            <article
+              key={part.slug}
+              className="flex min-h-[320px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-500/70 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="rounded-md border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-700">
+                  MTU
+                </span>
+                <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {part.partNumber}
+                </span>
+              </div>
+              <h2 className="mt-4 text-xl font-semibold leading-7 text-slate-950">
+                {partName(part, locale)}
+              </h2>
+              <p className="mt-2 text-sm font-medium text-teal-700">{part.category}</p>
+              <p className="mt-4 line-clamp-4 text-sm leading-6 text-slate-600">
+                {partDescription(part, locale)}
+              </p>
+              <div className="mt-auto pt-5">
+                <p className="text-sm font-semibold text-slate-800">{text.price}</p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href={`/${locale}/catalog/mtu/${part.slug}`}
+                    className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:border-teal-500 hover:text-teal-700"
+                  >
+                    {text.details}
+                  </Link>
+                  <Link
+                    href={`/${locale}/catalog/mtu/${part.slug}#contact-form`}
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-teal-600 px-4 text-sm font-semibold text-white transition hover:bg-teal-700"
+                  >
+                    {text.quote}
+                  </Link>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+          {text.empty}
+        </div>
+      )}
+    </div>
+  );
+}

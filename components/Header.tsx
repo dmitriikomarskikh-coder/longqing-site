@@ -11,17 +11,18 @@ import {cn} from "@/lib/utils";
 
 const navLabels: Record<
   Locale,
-  {home: string; brands: string; news: string; contacts: string; quote: string}
+  {home: string; brands: string; catalog: string; news: string; contacts: string; quote: string}
 > = {
   ru: {
     home: "Главная",
     brands: "Бренды",
+    catalog: "Каталог MTU",
     news: "Новости",
     contacts: "Контакты",
     quote: "Получить КП"
   },
-  zh: {home: "首页", brands: "品牌", news: "新闻", contacts: "联系", quote: "获取报价"},
-  en: {home: "Home", brands: "Brands", news: "News", contacts: "Contacts", quote: "Get proposal"}
+  zh: {home: "首页", brands: "品牌", catalog: "MTU目录", news: "新闻", contacts: "联系", quote: "获取报价"},
+  en: {home: "Home", brands: "Brands", catalog: "MTU catalog", news: "News", contacts: "Contacts", quote: "Get proposal"}
 };
 
 export function Header({locale}: {locale: Locale}) {
@@ -78,12 +79,15 @@ export function Header({locale}: {locale: Locale}) {
               className="h-8 w-auto max-w-[158px] object-contain md:h-9 md:max-w-[178px]"
             />
           </Link>
-          <nav className="hidden shrink-0 items-center gap-6 text-sm font-medium text-text xl:flex">
+          <nav className="hidden shrink-0 items-center gap-5 text-sm font-medium text-text xl:flex">
             <Link className="transition hover:text-accent" href={`/${locale}`}>
               {nav.home}
             </Link>
             <Link className="transition hover:text-accent" href={`/${locale}/brands`}>
               {nav.brands}
+            </Link>
+            <Link className="transition hover:text-accent" href={`/${locale}/catalog/mtu`}>
+              {nav.catalog}
             </Link>
             <Link className="transition hover:text-accent" href={`/${locale}/news`}>
               {nav.news}
@@ -137,6 +141,9 @@ export function Header({locale}: {locale: Locale}) {
               </Link>
               <Link href={`/${locale}/brands`} onClick={() => setIsOpen(false)}>
                 {nav.brands}
+              </Link>
+              <Link href={`/${locale}/catalog/mtu`} onClick={() => setIsOpen(false)}>
+                {nav.catalog}
               </Link>
               <Link href={`/${locale}/news`} onClick={() => setIsOpen(false)}>
                 {nav.news}

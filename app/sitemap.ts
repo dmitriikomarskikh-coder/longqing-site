@@ -1,21 +1,23 @@
 import type {MetadataRoute} from "next";
 import brands from "@/content/brands.json";
 import categories from "@/content/category-pages.json";
+import {mtuParts} from "@/content/mtu-parts";
 import {stockItems} from "@/content/stock-items";
 import {locales} from "@/i18n/routing";
 import type {Brand} from "@/lib/types";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://longqingtrade.com";
-  const staticPaths = ["", "/brands", "/news", "/contacts", "/privacy", "/terms"];
+  const staticPaths = ["", "/brands", "/catalog/mtu", "/news", "/contacts", "/privacy", "/terms"];
   const brandPaths = (brands as Brand[]).map((brand) => `/brands/${brand.slug}`);
   const categoryPaths = (categories as Array<{slug: string}>).map(
     (category) => `/categories/${category.slug}`
   );
+  const mtuCatalogPaths = mtuParts.map((part) => `/catalog/mtu/${part.slug}`);
   const stockPaths = stockItems
     .filter((item) => item.slug === "forsunka-mtu-x52407500053")
     .map((item) => `/ru/stock/${item.slug}`);
-  const paths = [...staticPaths, ...brandPaths, ...categoryPaths];
+  const paths = [...staticPaths, ...brandPaths, ...categoryPaths, ...mtuCatalogPaths];
 
   return [
     ...locales.flatMap((locale) =>
