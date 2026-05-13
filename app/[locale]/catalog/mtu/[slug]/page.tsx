@@ -10,11 +10,13 @@ import type {Locale} from "@/i18n/routing";
 
 const labels = {
   ru: {
-    back: "Каталог MTU",
+    back: "Каталог",
     eyebrow: "Запчасть MTU",
     brand: "Бренд",
     category: "Категория",
     partNumber: "Артикул",
+    status: "Статус",
+    availability: "Доступно к поставке",
     description: "Описание",
     function: "Назначение",
     compatibility: "Совместимость",
@@ -27,11 +29,13 @@ const labels = {
       "Информация о запчастях носит справочный характер и не является публичной офертой. Наличие, цену, сроки поставки и совместимость необходимо подтвердить у менеджера по артикулу, серийному номеру двигателя или спецификации оборудования. LONGQING работает как независимый поставщик и не представляет MTU."
   },
   en: {
-    back: "MTU catalog",
+    back: "Catalog",
     eyebrow: "MTU spare part",
     brand: "Brand",
     category: "Category",
     partNumber: "Part number",
+    status: "Status",
+    availability: "Available for supply",
     description: "Description",
     function: "Function",
     compatibility: "Compatibility",
@@ -44,11 +48,13 @@ const labels = {
       "Part information is for reference and is not a public offer. Availability, price, lead time, and compatibility must be confirmed by a manager using the part number, engine serial number, or equipment specification. LONGQING acts as an independent supplier and does not represent MTU."
   },
   zh: {
-    back: "MTU目录",
+    back: "目录",
     eyebrow: "MTU备件",
     brand: "品牌",
     category: "类别",
     partNumber: "零件号",
+    status: "状态",
+    availability: "可供应",
     description: "描述",
     function: "用途",
     compatibility: "兼容性",
@@ -188,10 +194,17 @@ export default async function MtuPartPage({
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-700">
                 {text.eyebrow}
               </p>
-              <h1 className="mt-4 max-w-4xl text-4xl font-semibold leading-tight md:text-6xl">
+              <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight md:text-5xl">
                 {name}
               </h1>
-              <p className="mt-5 text-lg font-semibold text-slate-700">MTU {part.partNumber}</p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xl font-bold text-slate-950 md:text-2xl">
+                  MTU {part.partNumber}
+                </p>
+                <span className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                  {text.availability}
+                </span>
+              </div>
               <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600">
                 {partDescription(part, locale)}
               </p>
@@ -209,6 +222,7 @@ export default async function MtuPartPage({
                   [text.brand, part.brand],
                   [text.category, part.category],
                   [text.partNumber, part.partNumber],
+                  [text.status, text.availability],
                   [text.price, text.priceValue]
                 ].map(([label, value]) => (
                   <div key={label} className="border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
