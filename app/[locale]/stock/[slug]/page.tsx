@@ -26,7 +26,7 @@ const productDetails = {
     "высокая точность дозирования топлива",
     "работа в условиях высокой нагрузки, вибрации и запылённости",
     "подходит для обслуживания и ремонта двигателей MTU",
-    "прямая замена оригинальной форсунки"
+    "замена по артикулу после проверки совместимости"
   ]
 };
 
@@ -156,7 +156,7 @@ export default async function StockProductPage({
               </div>
               <p className="mt-5 max-w-3xl text-base leading-7 text-muted">
                 {locale === "ru"
-                  ? "Топливная форсунка MTU X52407500053 — оригинальная деталь системы Common Rail для дизельных двигателей MTU Series 4000. Обеспечивает точный впрыск топлива под высоким давлением, стабильную работу двигателя и эффективное сгорание топлива."
+                  ? "Топливная форсунка MTU X52407500053 — деталь системы Common Rail для дизельных двигателей MTU Series 4000. Обеспечивает точный впрыск топлива под высоким давлением, стабильную работу двигателя и эффективное сгорание топлива."
                   : item.description[locale]}
               </p>
             </div>
@@ -211,7 +211,7 @@ export default async function StockProductPage({
             </h2>
             <p className="mt-5 text-base leading-7 text-[#4b5563]">
               {locale === "ru"
-                ? "Форсунка применяется в топливной системе Common Rail, где важны точная дозировка, стабильное давление и надежность при длительной работе двигателя под нагрузкой."
+                ? "Форсунка применяется в топливной системе Common Rail, где важны точная дозировка, стабильное давление и устойчивость при длительной работе двигателя под нагрузкой."
                 : item.description[locale]}
             </p>
             <h3 className="mt-10 text-2xl font-semibold">
@@ -260,8 +260,8 @@ export default async function StockProductPage({
       <section className="bg-dark px-5 py-10">
         <div className="mx-auto max-w-7xl rounded border border-white/10 bg-dark-2 p-5 text-sm leading-6 text-muted">
           {locale === "ru"
-            ? "LONGQING Trade не является официальным дилером, дистрибьютором или сертифицированным сервисным центром MTU. Все товарные знаки принадлежат их правообладателям. Совместимость и применимость подтверждаются по артикулу, серийному номеру двигателя или технической документации."
-            : "LONGQING Trade is not an official dealer, distributor, or certified service center of MTU. All trademarks belong to their respective owners. Compatibility and applicability are confirmed by part number, engine serial number, or technical documentation."}
+            ? "LONGQING работает как независимый поставщик и не представляет MTU. Названия брендов используются только для идентификации оборудования, запчастей и совместимых компонентов. Совместимость и применимость подтверждаются по артикулу, серийному номеру двигателя или технической документации."
+            : "LONGQING operates as an independent supplier and does not represent MTU. Brand names are used only to identify equipment, spare parts and compatible components. Compatibility and applicability are confirmed by part number, engine serial number, or technical documentation."}
         </div>
       </section>
       <Suspense>

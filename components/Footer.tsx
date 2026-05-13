@@ -3,9 +3,9 @@ import Link from "next/link";
 import type {Locale} from "@/i18n/routing";
 
 const disclaimer: Record<Locale, string> = {
-  ru: "Все упомянутые торговые марки и логотипы являются собственностью их правообладателей. Компания не является официальным дилером, дистрибьютором или сертифицированным сервисным центром указанных производителей и осуществляет независимую поставку и ремонт оборудования, совместимого с продукцией перечисленных брендов.",
-  zh: "所有提及的商标和标识均归其权利人所有。本公司并非上述制造商的官方经销商、分销商或认证服务中心，而是独立提供与相关品牌产品兼容的设备供应和维修服务。",
-  en: "All mentioned trademarks and logos are the property of their respective owners. The company is not an official dealer, distributor, or certified service center of the listed manufacturers and provides independent supply and repair of equipment compatible with these brands."
+  ru: "LONGQING работает как независимый поставщик и не представляет производителей, бренды которых указаны на сайте. Названия брендов используются только для идентификации оборудования, запчастей и совместимых компонентов.",
+  zh: "LONGQING 作为独立供应方开展业务，并不代表本网站提及品牌所属的制造商。品牌名称仅用于识别设备、备件和兼容部件。",
+  en: "LONGQING operates as an independent supplier and does not represent the manufacturers whose brands are mentioned on this website. Brand names are used only to identify equipment, spare parts and compatible components."
 };
 
 export function Footer({locale}: {locale: Locale}) {

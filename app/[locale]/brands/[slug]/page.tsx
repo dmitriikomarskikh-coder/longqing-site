@@ -171,10 +171,10 @@ export default async function BrandPage({
       <section className="bg-dark px-5 py-10">
         <div className="mx-auto max-w-7xl rounded border border-white/10 bg-dark-2 p-5 text-sm leading-6 text-muted">
           {locale === "ru"
-            ? `LONGQING Trade не является официальным дилером, дистрибьютором или сертифицированным сервисным центром ${brandName}. Все товарные знаки принадлежат их правообладателям. Мы осуществляем независимый подбор и поставку оборудования и совместимых запчастей.`
+            ? `LONGQING работает как независимый поставщик и не представляет ${brandName}. Названия брендов используются только для идентификации оборудования, запчастей и совместимых компонентов.`
             : locale === "zh"
-              ? `LONGQING Trade 并非 ${brandName} 的官方经销商、分销商或认证服务中心。所有商标均归其权利人所有。我们独立进行设备和兼容备件的选型与供应。`
-              : `LONGQING Trade is not an official dealer, distributor, or certified service center of ${brandName}. All trademarks belong to their respective owners. We provide independent sourcing and supply of equipment and compatible spare parts.`}
+              ? `LONGQING 作为独立供应方开展业务，并不代表 ${brandName}。品牌名称仅用于识别设备、备件和兼容部件。`
+              : `LONGQING operates as an independent supplier and does not represent ${brandName}. Brand names are used only to identify equipment, spare parts and compatible components.`}
         </div>
       </section>
       <Suspense>

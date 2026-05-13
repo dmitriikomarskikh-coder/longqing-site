@@ -23,7 +23,7 @@ const content = {
       ],
       [
         "Товарные знаки и статус LONGQING",
-        "LONGQING не является официальным дилером, дистрибьютором или авторизованным сервисным центром MTU, Cummins, Siemens и других производителей, упомянутых на сайте. Названия и товарные знаки используются только для идентификации оборудования и запчастей."
+        "LONGQING работает как независимый поставщик и не представляет MTU, Cummins, Siemens и других производителей, бренды которых указаны на сайте. Названия брендов используются только для идентификации оборудования, запчастей и совместимых компонентов."
       ],
       [
         "Точность информации",
@@ -63,7 +63,7 @@ const content = {
       ],
       [
         "Trademarks and LONGQING status",
-        "LONGQING is not an official dealer, distributor, or authorized service center of MTU, Cummins, Siemens, or other manufacturers mentioned on the website. Names and trademarks are used only to identify equipment and spare parts."
+        "LONGQING operates as an independent supplier and does not represent MTU, Cummins, Siemens, or other manufacturers whose brands are mentioned on this website. Brand names are used only to identify equipment, spare parts and compatible components."
       ],
       [
         "Information accuracy",
