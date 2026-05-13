@@ -233,7 +233,7 @@ export function ContactForm({
             {text.phone}
             <input
               className="h-12 rounded border border-white/10 bg-dark px-3 text-text outline-none transition focus:border-accent"
-              placeholder="+7 900 000 00 00"
+              placeholder={locale === "ru" ? "Если удобнее связаться по телефону" : locale === "zh" ? "如需电话联系，请填写" : "If phone contact is preferred"}
               {...register("phone")}
             />
             {errors.phone ? <span className="text-xs text-[#dc2626]">{errors.phone.message}</span> : null}

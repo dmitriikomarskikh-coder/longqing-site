@@ -1,7 +1,35 @@
 import {notFound} from "next/navigation";
+import type {Metadata} from "next";
 import {setRequestLocale} from "next-intl/server";
 import type {Locale} from "@/i18n/routing";
 import {getNewsBySlug} from "@/lib/news";
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{locale: Locale; slug: string}>;
+}): Promise<Metadata> {
+  const {locale, slug} = await params;
+  const article = await getNewsBySlug(locale, slug);
+
+  if (!article) {
+    return {};
+  }
+
+  return {
+    title: `${article.item.title} | LONGQING`,
+    description: article.item.excerpt,
+    alternates: {
+      canonical: `/${locale}/news/${slug}`,
+      languages: {
+        ru: `/ru/news/${slug}`,
+        zh: `/zh/news/${slug}`,
+        en: `/en/news/${slug}`,
+        "x-default": `/en/news/${slug}`
+      }
+    }
+  };
+}
 
 export default async function NewsArticlePage({
   params

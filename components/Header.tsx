@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useEffect, useState} from "react";
-import {ContactButtons} from "@/components/ContactButtons";
 import {locales, type Locale} from "@/i18n/routing";
 import {cn} from "@/lib/utils";
 
@@ -100,7 +99,6 @@ export function Header({locale}: {locale: Locale}) {
             <Link href={`/${locale}#contact`} className="btn-primary h-9 px-3 text-[13px]">
               {nav.quote}
             </Link>
-            <ContactButtons locale={locale} compact />
             <button
               type="button"
               aria-label="Search"
@@ -172,7 +170,6 @@ export function Header({locale}: {locale: Locale}) {
                   </Link>
                 ))}
               </div>
-              <ContactButtons locale={locale} />
             </div>
           </div>
         ) : null}

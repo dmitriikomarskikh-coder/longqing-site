@@ -3,6 +3,8 @@ import {stockItems} from "@/content/stock-items";
 import type {Locale} from "@/i18n/routing";
 
 export function ChinaStock({locale}: {locale: Locale}) {
+  const visibleStockItems = stockItems.filter((item) => !item.slug.includes("placeholder"));
+
   return (
     <section className="bg-dark-2 px-5 pb-[60px] pt-[60px]">
       <div className="mx-auto max-w-7xl">
@@ -36,7 +38,7 @@ export function ChinaStock({locale}: {locale: Locale}) {
           </Link>
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {stockItems.slice(0, 6).map((item) => (
+          {visibleStockItems.slice(0, 6).map((item) => (
             <article
               key={item.id}
               className="rounded border border-white/10 bg-dark p-4 shadow-[0_18px_38px_rgba(0,0,0,0.16)]"

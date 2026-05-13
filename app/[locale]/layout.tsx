@@ -71,8 +71,7 @@ export default async function LocaleLayout({
       "山东龙擎国际贸易有限责任公司"
     ],
     url: siteUrl,
-    email: "office@longqingtrade.com",
-    telephone: "+7 900 000 00 00"
+    email: "office@longqingtrade.com"
   };
 
   return (

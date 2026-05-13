@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import {ContactButtons} from "@/components/ContactButtons";
 import type {Locale} from "@/i18n/routing";
 
 const disclaimer: Record<Locale, string> = {
@@ -27,10 +26,6 @@ export function Footer({locale}: {locale: Locale}) {
             ООО «Шаньдун Лунцин Интернэшнл Трейдинг»
           </p>
           <p className="mt-2 text-sm text-muted">office@longqingtrade.com</p>
-          <p className="mt-2 text-sm text-muted">+7 900 000 00 00</p>
-          <div className="mt-5">
-            <ContactButtons locale={locale} />
-          </div>
         </div>
         <div className="grid gap-6">
           <nav className="flex flex-wrap gap-5 text-sm text-muted">
