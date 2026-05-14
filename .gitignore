@@ -10,3 +10,13 @@ tsconfig.tsbuildinfo
 public/uploads/
 .DS_Store
 data-import/
+.env*
+!.env.example
+!.env.outreach.example
+data/outreach/recipients.csv
+data/outreach/suppression.csv
+data/outreach/*.xlsx
+data/outreach/*.xls
+data/outreach/*.pdf
+data/outreach/*.log
+.logs/
