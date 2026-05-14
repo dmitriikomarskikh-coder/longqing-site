@@ -67,6 +67,10 @@ type AttachmentConfig = {
   path: string;
 };
 
+type SentMailbox = {
+  path: string;
+};
+
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataDir = path.join(projectRoot, "data", "outreach");
 const logDir = path.join(projectRoot, ".logs");
@@ -565,11 +569,19 @@ function validateAttachment(config: AttachmentConfig) {
   return [{filename: path.basename(fullPath), path: fullPath}];
 }
 
-async function appendSent(rawMessage: string) {
-  if (!env("IMAP_PASS")) {
-    return "skipped_no_imap_password";
-  }
+function requireSentAppend() {
+  return boolEnv("OUTREACH_REQUIRE_SENT_APPEND", false);
+}
 
+function validateImapConfig() {
+  for (const name of ["IMAP_HOST", "IMAP_PORT", "IMAP_USER", "IMAP_PASS"]) {
+    if (!env(name)) {
+      fail(`${name} is required when OUTREACH_REQUIRE_SENT_APPEND=true`);
+    }
+  }
+}
+
+function createImapClient() {
   const client = new ImapFlow({
     host: env("IMAP_HOST", "imap.timeweb.ru"),
     port: intEnv("IMAP_PORT", 993),
@@ -581,18 +593,21 @@ async function appendSent(rawMessage: string) {
     logger: false
   });
 
+  return client;
+}
+
+async function sentAppendPreflight() {
+  validateImapConfig();
+  const client = createImapClient();
+
   try {
     await client.connect();
     const mailboxes = await client.list();
     const mailbox = findSentMailbox(mailboxes);
     if (!mailbox) {
-      return "failed_no_sent_folder";
+      fail("IMAP Sent folder was not found");
     }
-    await client.append(mailbox, Buffer.from(rawMessage, "utf8"), ["\\Seen"]);
-    return "appended";
-  } catch (error) {
-    const sanitized = sanitizeError(error);
-    return `failed_${sanitized.code}`;
+    return {path: mailbox};
   } finally {
     await client.logout().catch(() => undefined);
   }
@@ -610,7 +625,7 @@ function findSentMailbox(mailboxes: MailboxEntry[]) {
     return special.path;
   }
 
-  for (const candidate of ["Sent", "INBOX.Sent", "Отправленные"]) {
+  for (const candidate of ["Sent", "INBOX.Sent", "Отправленные", "Sent Messages"]) {
     const match = mailboxes.find((box) => box.path === candidate || box.name === candidate);
     if (match?.path) {
       return match.path;
@@ -620,7 +635,26 @@ function findSentMailbox(mailboxes: MailboxEntry[]) {
   return "";
 }
 
-async function sendOne(mode: Mode, recipient: Recipient) {
+async function appendSent(rawMessage: string, mailbox?: SentMailbox) {
+  if (!env("IMAP_PASS")) {
+    return "skipped_no_imap_password";
+  }
+
+  const targetMailbox = mailbox ?? (await sentAppendPreflight());
+  const client = createImapClient();
+
+  try {
+    await client.connect();
+    await client.append(targetMailbox.path, Buffer.from(rawMessage, "utf8"), ["\\Seen"]);
+    return "success";
+  } catch {
+    return "failed";
+  } finally {
+    await client.logout().catch(() => undefined);
+  }
+}
+
+async function sendOne(mode: Mode, recipient: Recipient, sentMailbox?: SentMailbox) {
   validateSmtpConfig();
   const content = buildEmail(recipient);
   const attachments = validateAttachment(attachmentConfig());
@@ -647,7 +681,7 @@ async function sendOne(mode: Mode, recipient: Recipient) {
     html: content.html,
     attachments
   });
-  const sentAppendStatus = await appendSent(rawMessage);
+  const sentAppendStatus = await appendSent(rawMessage, sentMailbox);
 
   appendLog({
     ...makeLogBase(mode, recipient, content),
@@ -702,6 +736,7 @@ async function dryRun() {
 
 async function testSend() {
   validateSmtpConfig();
+  const sentMailbox = requireSentAppend() ? await sentAppendPreflight() : undefined;
   const recipientEmail = env("OUTREACH_TEST_RECIPIENT").trim();
   if (!recipientEmail) {
     fail("OUTREACH_TEST_RECIPIENT is required for test-send");
@@ -722,14 +757,17 @@ async function testSend() {
     error: ""
   };
 
-  const result = await sendOne("test-send", recipient);
+  const result = await sendOne("test-send", recipient, sentMailbox);
+  if (requireSentAppend() && result.sentAppendStatus !== "success") {
+    fail(`SMTP sent but IMAP Sent append failed: ${result.sentAppendStatus}`);
+  }
   console.log(`Test-send complete: to=${maskEmail(recipient.email)}, messageId=${result.messageId}`);
   console.log(`IMAP sent append: ${result.sentAppendStatus}`);
 }
 
 function shouldStopAfterError(error: unknown, consecutiveErrors: number) {
   const sanitized = sanitizeError(error);
-  const hardStopCodes = new Set(["EAUTH", "EDNS", "ECONNECTION", "ETIMEDOUT", "ESOCKET"]);
+  const hardStopCodes = new Set(["EAUTH", "EDNS", "ECONNECTION", "ETIMEDOUT", "ESOCKET", "SENT_APPEND_FAILED"]);
   if (sanitized.code === "EAUTH") {
     return true;
   }
@@ -744,7 +782,11 @@ async function batchSend() {
   if (env("OUTREACH_BATCH_CONFIRMATION") !== "SEND_LONGQING_MTU_BATCH") {
     fail("OUTREACH_BATCH_CONFIRMATION must be SEND_LONGQING_MTU_BATCH");
   }
+  if (!requireSentAppend()) {
+    fail("OUTREACH_REQUIRE_SENT_APPEND=true is required for batch-send");
+  }
 
+  const sentMailbox = await sentAppendPreflight();
   const limit = getBatchLimit();
   const {recipients} = readRecipients({allowExampleFallback: false});
   const seen = new Set<string>();
@@ -766,7 +808,23 @@ async function batchSend() {
     }
 
     try {
-      const result = await sendOne("batch-send", recipient);
+      const result = await sendOne("batch-send", recipient, sentMailbox);
+      if (result.sentAppendStatus !== "success") {
+        recipient.status = "error";
+        recipient.error = `SMTP sent but IMAP Sent append failed: ${result.sentAppendStatus}`;
+        writeRecipients(recipients);
+        appendLog({
+          ...makeLogBase("batch-send", recipient, content),
+          status: "error",
+          smtp_message_id: result.messageId,
+          sent_append_status: result.sentAppendStatus,
+          error_code: "SENT_APPEND_FAILED",
+          error_message_sanitized: recipient.error
+        });
+        const appendError = new Error(recipient.error);
+        appendError.name = "SENT_APPEND_FAILED";
+        throw appendError;
+      }
       recipient.status = "sent";
       recipient.last_sent_at = new Date().toISOString();
       recipient.error = "";

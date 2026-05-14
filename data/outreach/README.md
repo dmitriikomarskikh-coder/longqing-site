@@ -56,3 +56,13 @@ Prepare the first 30 recipients manually:
 5. Run `npm run outreach:dry-run` before any send mode.
 
 Never paste SMTP passwords or private customer lists into docs, commits, issue trackers, or chat logs.
+
+## Sending safety
+
+Real sends require SMTP relay through Timeweb and Sent archiving through IMAP:
+
+- pass `SMTP_PASS` and `IMAP_PASS` locally through terminal environment variables, not through chat;
+- keep `OUTREACH_BCC_ARCHIVE` empty unless you intentionally set it for a controlled test;
+- keep `OUTREACH_REQUIRE_SENT_APPEND=true` for real batch sending;
+- do not run batch sending if the IMAP append to Sent / “Отправленные” fails;
+- after test-send, check Timeweb webmail and confirm the message appears in Sent / “Отправленные”.
