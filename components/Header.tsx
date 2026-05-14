@@ -1,6 +1,6 @@
 "use client";
 
-import {Globe2, Menu, Search, X} from "lucide-react";
+import {Globe2, Menu, Phone, Search, X} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
@@ -53,6 +53,9 @@ const searchLabels: Record<
     sections: "栏目"
   }
 };
+
+const phoneDisplay = "+7 905 074 97 77";
+const phoneHref = "tel:+79050749777";
 
 type SearchItem = {
   href: string;
@@ -205,6 +208,13 @@ export function Header({locale}: {locale: Locale}) {
             </Link>
           </nav>
           <div className="hidden shrink-0 items-center gap-3 xl:flex">
+            <a
+              href={phoneHref}
+              className="hidden items-center gap-2 text-sm font-semibold text-text transition hover:text-accent 2xl:flex"
+            >
+              <Phone size={16} />
+              {phoneDisplay}
+            </a>
             <Link href={`/${locale}#contact`} className="btn-primary h-9 px-3 text-[13px]">
               {nav.quote}
             </Link>
@@ -280,6 +290,14 @@ export function Header({locale}: {locale: Locale}) {
               <Link href={`/${locale}/contacts`} onClick={() => setIsOpen(false)}>
                 {nav.contacts}
               </Link>
+              <a
+                href={phoneHref}
+                className="flex h-11 items-center justify-center gap-2 rounded border border-white/10 text-sm font-semibold text-text transition hover:border-accent hover:text-accent"
+                onClick={() => setIsOpen(false)}
+              >
+                <Phone size={16} />
+                {phoneDisplay}
+              </a>
               <Link
                 href={`/${locale}#contact`}
                 className="btn-primary h-11 px-4 text-sm"

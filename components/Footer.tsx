@@ -8,6 +8,9 @@ const disclaimer: Record<Locale, string> = {
   en: "LONGQING operates as an independent supplier and does not represent the manufacturers whose brands are mentioned on this website. Brand names are used only to identify equipment, spare parts and compatible components."
 };
 
+const phoneDisplay = "+7 905 074 97 77";
+const phoneHref = "tel:+79050749777";
+
 export function Footer({locale}: {locale: Locale}) {
   return (
     <footer className="border-t border-border-dark bg-dark px-5 py-12">
@@ -26,6 +29,9 @@ export function Footer({locale}: {locale: Locale}) {
             ООО «Шаньдун Лунцин Интернэшнл Трейдинг»
           </p>
           <p className="mt-2 text-sm text-muted">office@longqingtrade.com</p>
+          <a className="mt-2 block text-sm text-text transition hover:text-accent" href={phoneHref}>
+            {phoneDisplay}
+          </a>
         </div>
         <div className="grid gap-6">
           <nav className="flex flex-wrap gap-5 text-sm text-muted">
@@ -40,7 +46,7 @@ export function Footer({locale}: {locale: Locale}) {
                   : "Privacy"}
             </Link>
             <Link href={`/${locale}/terms`}>
-              {locale === "ru" ? "Условия" : locale === "zh" ? "条款" : "Terms"}
+              {locale === "ru" ? "Пользовательское соглашение" : locale === "zh" ? "条款" : "Terms"}
             </Link>
           </nav>
           <p className="text-xs leading-5 text-muted">{disclaimer[locale]}</p>
