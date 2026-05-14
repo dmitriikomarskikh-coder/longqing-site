@@ -7,43 +7,40 @@ import type {Locale} from "@/i18n/routing";
 
 const labels = {
   ru: {
-    search: "Поиск по артикулу или названию",
+    search: "Поиск по артикулу, названию или описанию",
     category: "Категория",
     allCategories: "Все категории",
     partNumber: "Артикул",
-    availability: "Доступно к поставке",
-    price: "Цена по запросу",
+    availability: "В наличии",
     details: "Подробнее",
     quote: "Запросить КП",
     empty: "Позиции не найдены. Попробуйте изменить запрос или категорию.",
     reducedDescription:
-      "Позиция доступна для обработки B2B-запроса. Описание, применимость, цену и срок поставки уточним по артикулу и данным оборудования."
+      "Позиция доступна для обработки B2B-запроса. Описание, применимость и срок поставки уточним по артикулу и данным оборудования."
   },
   en: {
-    search: "Search by part number or name",
+    search: "Search by part number, name or description",
     category: "Category",
     allCategories: "All categories",
     partNumber: "Part number",
-    availability: "Available for supply",
-    price: "Price on request",
+    availability: "In stock",
     details: "Details",
     quote: "Request proposal",
     empty: "No parts found. Try changing the search query or category.",
     reducedDescription:
-      "This item is available for B2B request processing. Description, applicability, price, and lead time are confirmed by part number and equipment data."
+      "This item can be processed as a B2B request. Description, applicability, and lead time are confirmed by part number and equipment data."
   },
   zh: {
-    search: "按零件号或名称搜索",
+    search: "按零件号、名称或描述搜索",
     category: "类别",
     allCategories: "全部类别",
     partNumber: "零件号",
-    availability: "可供应",
-    price: "价格按请求确认",
+    availability: "有库存",
     details: "详情",
     quote: "获取报价",
     empty: "未找到相关项目。请更改搜索词或类别。",
     reducedDescription:
-      "该项目可处理 B2B 询价。描述、适用性、价格和交期将根据零件号和设备信息确认。"
+      "该项目可处理 B2B 询价。描述、适用性、交期将根据零件号和设备信息确认。"
   }
 } satisfies Record<Locale, Record<string, string>>;
 
@@ -61,10 +58,10 @@ function partDescription(part: MtuPart, locale: Locale) {
   }
 
   if (locale === "zh") {
-    return `MTU ${part.partNumber} 可按 B2B 请求处理。适用性、价格和交期将根据设备信息确认。`;
+    return `MTU ${part.partNumber} 可按 B2B 请求处理。适用性、交期将根据设备信息确认。`;
   }
 
-  return `MTU ${part.partNumber} is available for B2B sourcing. Applicability, price, and lead time are confirmed by equipment data.`;
+  return `MTU ${part.partNumber} can be processed as a B2B sourcing request. Applicability and lead time are confirmed by equipment data.`;
 }
 
 export function MtuCatalogList({locale, parts}: {locale: Locale; parts: MtuPart[]}) {
@@ -80,7 +77,8 @@ export function MtuCatalogList({locale, parts}: {locale: Locale; parts: MtuPart[
 
     return parts.filter((part) => {
       const matchesCategory = category === "all" || part.category === category;
-      const searchable = `${part.partNumber} ${part.nameRu} ${part.nameEn}`.toLowerCase();
+      const searchable =
+        `${part.partNumber} ${part.nameRu} ${part.nameEn} ${part.shortDescriptionRu} ${part.functionRu} ${part.compatibilityNoteRu} ${part.category}`.toLowerCase();
       const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
 
       return matchesCategory && matchesQuery;
@@ -124,9 +122,9 @@ export function MtuCatalogList({locale, parts}: {locale: Locale; parts: MtuPart[
             return (
               <article
                 key={part.slug}
-                className="flex min-h-[340px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-500/70 hover:shadow-md"
+                className="flex min-h-[320px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-500/70 hover:shadow-md"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center justify-between gap-3">
                   <span className="rounded-md border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-700">
                     MTU
                   </span>
@@ -134,17 +132,20 @@ export function MtuCatalogList({locale, parts}: {locale: Locale; parts: MtuPart[
                     {text.availability}
                   </span>
                 </div>
-                <Link
-                  href={detailHref}
-                  className="mt-4 inline-flex w-fit rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-lg font-bold text-slate-950 transition hover:border-teal-500 hover:text-teal-700"
-                >
-                  MTU {part.partNumber}
-                </Link>
-                <h2 className="mt-4 text-xl font-semibold leading-7 text-slate-950">
+                <h2 className="mt-4 text-lg font-semibold leading-6 text-slate-950">
                   <Link href={detailHref} className="transition hover:text-teal-700">
                     {partName(part, locale)}
                   </Link>
                 </h2>
+                {locale === "ru" ? (
+                  <p className="mt-1 text-sm font-medium text-slate-500">{part.nameEn}</p>
+                ) : null}
+                <Link
+                  href={detailHref}
+                  className="mt-3 text-base font-semibold text-slate-950 transition hover:text-teal-700"
+                >
+                  {text.partNumber}: MTU {part.partNumber}
+                </Link>
                 <p className="mt-2 text-sm font-medium text-teal-700">{part.category}</p>
                 <Link
                   href={detailHref}
@@ -153,8 +154,7 @@ export function MtuCatalogList({locale, parts}: {locale: Locale; parts: MtuPart[
                   {partDescription(part, locale)}
                 </Link>
                 <div className="mt-auto pt-5">
-                  <p className="text-sm font-semibold text-slate-800">{text.price}</p>
-                  <div className="mt-4 flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-3">
                     <Link
                       href={detailHref}
                       className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:border-teal-500 hover:text-teal-700"

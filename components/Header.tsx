@@ -91,7 +91,7 @@ export function Header({locale}: {locale: Locale}) {
       title: `MTU ${part.partNumber}`,
       subtitle: locale === "ru" ? part.nameRu : part.nameEn,
       group: searchText.parts,
-      keywords: `${part.partNumber} ${part.nameRu} ${part.nameEn} ${part.category} ${part.slug}`
+      keywords: `${part.partNumber} ${part.nameRu} ${part.nameEn} ${part.shortDescriptionRu} ${part.functionRu} ${part.compatibilityNoteRu} ${part.category} ${part.slug}`
     }));
 
     return [
@@ -232,14 +232,24 @@ export function Header({locale}: {locale: Locale}) {
               ))}
             </div>
           </div>
-          <button
-            type="button"
-            aria-label="Menu"
-            className="grid size-10 place-items-center rounded border border-white/10 text-text xl:hidden"
-            onClick={() => setIsOpen((value) => !value)}
-          >
-            {isOpen ? <X size={24} strokeWidth={2.2} /> : <Menu size={24} strokeWidth={2.2} />}
-          </button>
+          <div className="flex items-center gap-2 xl:hidden">
+            <button
+              type="button"
+              aria-label="Search"
+              className="grid size-10 place-items-center rounded border border-white/10 text-text transition hover:border-accent hover:text-accent"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              <Search size={20} />
+            </button>
+            <button
+              type="button"
+              aria-label="Menu"
+              className="grid size-10 place-items-center rounded border border-white/10 text-text"
+              onClick={() => setIsOpen((value) => !value)}
+            >
+              {isOpen ? <X size={24} strokeWidth={2.2} /> : <Menu size={24} strokeWidth={2.2} />}
+            </button>
+          </div>
         </div>
         {isOpen ? (
           <div className="mx-[-20px] border-b border-accent/35 bg-dark-2/95 px-5 pb-5 pt-2 shadow-[0_20px_45px_rgba(0,0,0,0.36)] backdrop-blur xl:hidden">
@@ -253,6 +263,17 @@ export function Header({locale}: {locale: Locale}) {
               <Link href={`/${locale}/catalog/mtu`} onClick={() => setIsOpen(false)}>
                 {nav.catalog}
               </Link>
+              <button
+                type="button"
+                className="flex h-11 items-center justify-center gap-2 rounded border border-white/10 text-sm font-semibold text-text transition hover:border-accent hover:text-accent"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsSearchOpen(true);
+                }}
+              >
+                <Search size={16} />
+                {locale === "ru" ? "Поиск" : locale === "zh" ? "搜索" : "Search"}
+              </button>
               <Link href={`/${locale}/news`} onClick={() => setIsOpen(false)}>
                 {nav.news}
               </Link>

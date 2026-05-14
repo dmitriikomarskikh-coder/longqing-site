@@ -7,39 +7,43 @@ const content = {
     title: "Политика конфиденциальности",
     description:
       "Политика обработки персональных данных LONGQING для B2B-запросов на промышленное оборудование и запчасти.",
-    updated: "Дата обновления: 13 мая 2026 г.",
+    updated: "Дата редакции: 13 мая 2026 г.",
     sections: [
       [
-        "Кто обрабатывает данные",
-        "Оператором данных является Shandong Longqing International Trading Co., Ltd. Компания принимает и обрабатывает B2B-запросы от организаций и представителей организаций из России, СНГ и других стран."
+        "Оператор данных",
+        "Оператором данных является Shandong Longqing International Trading Co., Ltd. Компания обрабатывает обращения представителей организаций по вопросам подбора и поставки промышленного оборудования, запчастей и совместимых компонентов."
       ],
       [
-        "Какие данные мы получаем",
-        "Через форму заявки мы можем получать имя, e-mail, телефон, компанию, текст сообщения, сведения об оборудовании, артикулы, спецификации, файлы и техническую информацию, которую пользователь передаёт добровольно."
+        "Какие данные обрабатываются",
+        "Через формы на Сайте пользователь может передать имя, телефон, e-mail, компанию, текст обращения, артикулы, сведения об оборудовании, спецификации, файлы и иную информацию, необходимую для рассмотрения B2B-запроса."
       ],
       [
-        "Зачем используются данные",
-        "Данные используются для обработки B2B-запросов, подбора оборудования и запчастей, подготовки коммерческого предложения, уточнения совместимости, связи с заявителем и ведения внутреннего учёта обращений."
+        "Цели обработки",
+        "Данные используются для приема и рассмотрения заявки, связи с заявителем, уточнения технической задачи, проверки наличия и совместимости, подготовки коммерческого предложения, ведения деловой переписки и внутреннего учета обращений."
       ],
       [
-        "Трансграничная передача",
-        "Так как LONGQING является китайской компанией, данные из заявки могут передаваться и обрабатываться на территории Китайской Народной Республики. Отправляя форму, пользователь подтверждает согласие на такую трансграничную передачу для обработки B2B-запроса."
-      ],
-      [
-        "Хранение и защита",
-        "Мы храним данные в объёме, необходимом для обработки запроса и последующей деловой переписки. Мы применяем организационные и технические меры, направленные на защиту данных от несанкционированного доступа."
+        "Передача данных сотрудникам Компании",
+        "Первичная обработка заявок с Сайта осуществляется с использованием инфраструктуры Сайта. Данные могут передаваться сотрудникам Компании в КНР исключительно для рассмотрения запроса, подготовки коммерческого предложения и деловой коммуникации."
       ],
       [
         "Передача третьим лицам",
-        "При необходимости данные могут быть переданы логистическим, техническим или закупочным контрагентам только в объёме, необходимом для обработки запроса, проверки наличия, совместимости и условий поставки."
+        "При необходимости данные могут быть переданы логистическим, техническим или закупочным контрагентам только в объеме, необходимом для обработки запроса, проверки наличия, совместимости и условий поставки."
+      ],
+      [
+        "Срок хранения",
+        "Данные хранятся 3 года с момента последнего обращения, если более длительный срок не требуется применимым законодательством, договором или защитой прав Компании."
+      ],
+      [
+        "Cookies",
+        "Сайт использует технические cookies, необходимые для корректной работы страниц, форм и базовых функций. Аналитические системы в коде проекта не обнаружены; новые трекеры не добавляются без отдельного согласования."
       ],
       [
         "Права пользователя",
         "Пользователь может запросить уточнение, удаление или ограничение обработки своих данных, направив обращение на office@longqingtrade.com."
       ],
       [
-        "Статус компании",
-        "LONGQING работает как независимый поставщик и не представляет MTU, Cummins, Siemens и других производителей, бренды которых указаны на сайте. Названия брендов используются только для идентификации оборудования, запчастей и совместимых компонентов."
+        "Статус Компании",
+        "LONGQING работает как независимый поставщик. Бренды и артикулы на Сайте используются только для идентификации оборудования, запчастей и совместимых компонентов."
       ]
     ]
   },
@@ -47,31 +51,35 @@ const content = {
     title: "Privacy Policy",
     description:
       "LONGQING personal data processing policy for B2B requests for industrial equipment and spare parts.",
-    updated: "Updated: May 13, 2026",
+    updated: "Revision date: May 13, 2026",
     sections: [
       [
-        "Who processes data",
-        "The data controller is Shandong Longqing International Trading Co., Ltd. The company receives and processes B2B requests from organizations and their representatives in Russia, the CIS, and other countries."
+        "Data controller",
+        "The data controller is Shandong Longqing International Trading Co., Ltd. The company processes requests from organization representatives regarding selection and supply of industrial equipment, spare parts, and compatible components."
       ],
       [
-        "Data we receive",
-        "Through the request form, we may receive name, e-mail, phone, company, message text, equipment details, part numbers, specifications, files, and technical information voluntarily provided by the user."
+        "Data processed",
+        "Through website forms, a user may provide name, phone, e-mail, company, request text, part numbers, equipment details, specifications, files, and other information required to review a B2B request."
       ],
       [
-        "How data is used",
-        "Data is used to process B2B requests, select equipment and spare parts, prepare commercial proposals, confirm compatibility, contact the requester, and keep internal request records."
+        "Processing purposes",
+        "Data is used to receive and review requests, contact the requester, clarify the technical task, check stock status and compatibility, prepare commercial proposals, maintain business communication, and keep internal request records."
       ],
       [
-        "Cross-border transfer",
-        "As LONGQING is a Chinese company, request data may be transferred to and processed in the People’s Republic of China. By submitting the form, the user consents to such cross-border transfer for B2B request processing."
+        "Transfer to company staff",
+        "Initial processing of website requests is performed using the website infrastructure. Data may be shared with company staff in China only to review the request, prepare a commercial proposal, and conduct business communication."
       ],
       [
-        "Storage and protection",
-        "We store data to the extent required to process the request and related business correspondence. We apply organizational and technical measures intended to protect data from access without permission."
+        "Third parties",
+        "Where needed, data may be shared with logistics, technical, or sourcing contractors only to the extent required to process the request, check stock status, compatibility, and supply terms."
       ],
       [
-        "Third-party transfer",
-        "Where needed, data may be shared with logistics, technical, or sourcing contractors only to the extent required to process the request, confirm availability, compatibility, and supply terms."
+        "Retention period",
+        "Data is stored for 3 years from the last contact, unless a longer period is required by applicable law, contract, or protection of the company’s rights."
+      ],
+      [
+        "Cookies",
+        "The website uses technical cookies required for correct page, form, and basic function operation. No analytics systems were found in the project code; no new trackers are added without separate approval."
       ],
       [
         "User rights",
@@ -79,38 +87,42 @@ const content = {
       ],
       [
         "Company status",
-        "LONGQING operates as an independent supplier and does not represent MTU, Cummins, Siemens, or other manufacturers whose brands are mentioned on this website. Brand names are used only to identify equipment, spare parts and compatible components."
+        "LONGQING acts as an independent supplier. Brand names and part numbers on the website are used only to identify equipment, spare parts, and compatible components."
       ]
     ]
   },
   zh: {
     title: "隐私政策",
     description: "LONGQING 关于工业设备和备件 B2B 询价的个人数据处理政策。",
-    updated: "更新日期：2026年5月13日",
+    updated: "修订日期：2026年5月13日",
     sections: [
       [
         "数据处理方",
-        "数据处理方为 Shandong Longqing International Trading Co., Ltd. 公司接收并处理来自俄罗斯、独联体及其他国家企业和企业代表的 B2B 请求。"
+        "数据处理方为 Shandong Longqing International Trading Co., Ltd. 公司处理企业代表就工业设备、备件和兼容部件选型及供应提交的请求。"
       ],
       [
-        "我们接收的数据",
-        "通过询价表，我们可能接收姓名、电子邮件、电话、公司、留言、设备信息、零件号、规格、文件以及用户自愿提供的技术信息。"
+        "处理的数据",
+        "用户可通过网站表单提交姓名、电话、电子邮件、公司、请求内容、零件号、设备信息、规格、文件以及处理 B2B 请求所需的其他信息。"
       ],
       [
-        "数据用途",
-        "数据用于处理 B2B 请求、选择设备和备件、准备商业报价、确认兼容性、联系申请人以及进行内部请求记录。"
+        "处理目的",
+        "数据用于接收和审查请求、联系申请人、明确技术任务、核实库存状态和兼容性、准备商业报价、开展商务沟通以及进行内部请求记录。"
       ],
       [
-        "跨境传输",
-        "由于 LONGQING 是中国公司，询价数据可能被传输至中华人民共和国并在该地区处理。提交表单即表示用户同意为处理 B2B 请求进行此类跨境传输。"
+        "向公司员工传递",
+        "网站请求的初步处理使用网站基础设施完成。数据可仅为审查请求、准备商业报价和商务沟通之目的传递给公司在中国的员工。"
       ],
       [
-        "存储和保护",
-        "我们在处理请求和后续商务沟通所需范围内保存数据，并采取组织和技术措施保护数据免受未经授权的访问。"
+        "第三方",
+        "必要时，数据可在处理请求、核实库存状态、兼容性和供应条件所需范围内提供给物流、技术或采购合作方。"
       ],
       [
-        "向第三方传输",
-        "必要时，数据可在处理请求、确认库存、兼容性和供应条件所需范围内提供给物流、技术或采购合作方。"
+        "保存期限",
+        "数据自最后一次联系之日起保存 3 年，除非适用法律、合同或维护公司权利需要更长期限。"
+      ],
+      [
+        "Cookies",
+        "网站使用页面、表单和基础功能正常运行所需的技术 cookies。项目代码中未发现分析系统；未经另行确认不会添加新的跟踪工具。"
       ],
       [
         "用户权利",
@@ -118,7 +130,7 @@ const content = {
       ],
       [
         "公司状态",
-        "LONGQING 并非 MTU、Cummins、Siemens 或网站所提及其他制造商的官方经销商、分销商或授权服务中心。所有商标归其权利人所有。"
+        "LONGQING 作为独立供应商开展业务。网站上的品牌名称和零件号仅用于识别设备、备件和兼容部件。"
       ]
     ]
   }
@@ -159,7 +171,7 @@ export default async function PrivacyPage({
   return (
     <main className="bg-light px-5 pb-20 pt-32 text-dark">
       <article className="mx-auto max-w-3xl">
-        <h1 className="text-5xl font-semibold">{text.title}</h1>
+        <h1 className="text-4xl font-semibold md:text-5xl">{text.title}</h1>
         <p className="mt-4 text-sm text-neutral-500">{text.updated}</p>
         <p className="mt-8 text-base leading-8 text-neutral-700">{text.description}</p>
         <div className="mt-10 grid gap-8">

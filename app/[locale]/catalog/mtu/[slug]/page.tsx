@@ -16,17 +16,15 @@ const labels = {
     category: "Категория",
     partNumber: "Артикул",
     status: "Статус",
-    availability: "Доступно к поставке",
+    availability: "В наличии",
     description: "Описание",
     function: "Назначение",
     compatibility: "Совместимость",
-    price: "Цена",
-    priceValue: "Цена по запросу",
     quote: "Запросить КП",
     reduced:
-      "Эта позиция доступна для обработки B2B-запроса. Перед подготовкой КП менеджер уточнит описание, наличие, цену и совместимость по артикулу и данным оборудования.",
+      "Эта позиция доступна для обработки B2B-запроса. Перед подготовкой КП менеджер уточнит описание, наличие и совместимость по артикулу и данным оборудования.",
     disclaimer:
-      "Информация о запчастях носит справочный характер и не является публичной офертой. Наличие, цену, сроки поставки и совместимость необходимо подтвердить у менеджера по артикулу, серийному номеру двигателя или спецификации оборудования. LONGQING работает как независимый поставщик и не представляет MTU."
+      "Информация о запчастях носит справочный характер и не является публичной офертой. Наличие, сроки поставки и совместимость необходимо подтвердить у менеджера по артикулу, серийному номеру двигателя или спецификации оборудования. LONGQING работает как независимый поставщик и не представляет MTU."
   },
   en: {
     back: "Catalog",
@@ -35,17 +33,15 @@ const labels = {
     category: "Category",
     partNumber: "Part number",
     status: "Status",
-    availability: "Available for supply",
+    availability: "In stock",
     description: "Description",
     function: "Function",
     compatibility: "Compatibility",
-    price: "Price",
-    priceValue: "Price on request",
     quote: "Request proposal",
     reduced:
-      "This item is available for B2B request processing. Before preparing a proposal, a manager will confirm description, availability, price, and compatibility by part number and equipment data.",
+      "This item can be processed as a B2B request. Before preparing a proposal, a manager will confirm description, stock status, and compatibility by part number and equipment data.",
     disclaimer:
-      "Part information is for reference and is not a public offer. Availability, price, lead time, and compatibility must be confirmed by a manager using the part number, engine serial number, or equipment specification. LONGQING acts as an independent supplier and does not represent MTU."
+      "Part information is for reference and is not a public offer. Stock status, lead time, and compatibility must be confirmed by a manager using the part number, engine serial number, or equipment specification. LONGQING acts as an independent supplier and does not represent MTU."
   },
   zh: {
     back: "目录",
@@ -54,17 +50,15 @@ const labels = {
     category: "类别",
     partNumber: "零件号",
     status: "状态",
-    availability: "可供应",
+    availability: "有库存",
     description: "描述",
     function: "用途",
     compatibility: "兼容性",
-    price: "价格",
-    priceValue: "价格按请求确认",
     quote: "获取报价",
     reduced:
-      "该项目可处理 B2B 询价。准备报价前，经理将根据零件号和设备信息确认描述、库存、价格和兼容性。",
+      "该项目可处理 B2B 询价。准备报价前，经理将根据零件号和设备信息确认描述、库存、兼容性。",
     disclaimer:
-      "备件信息仅供参考，不构成公开报价。库存、价格、交期和兼容性需由经理根据零件号、发动机序列号或设备规格确认。LONGQING 作为独立供应方开展业务，并不代表 MTU。"
+      "备件信息仅供参考，不构成公开报价。库存状态、交期和兼容性需由经理根据零件号、发动机序列号或设备规格确认。LONGQING 作为独立供应方开展业务，并不代表 MTU。"
   }
 } satisfies Record<Locale, Record<string, string>>;
 
@@ -82,10 +76,10 @@ function partDescription(part: MtuPart, locale: Locale) {
   }
 
   if (locale === "zh") {
-    return `MTU ${part.partNumber} 可按 B2B 请求处理。库存、价格、交期和适用性将根据设备信息确认。`;
+    return `MTU ${part.partNumber} 可按 B2B 请求处理。库存状态、交期和适用性将根据设备信息确认。`;
   }
 
-  return `MTU ${part.partNumber} is available for B2B sourcing. Availability, price, lead time, and applicability are confirmed by equipment data.`;
+  return `MTU ${part.partNumber} can be processed as a B2B sourcing request. Stock status, lead time, and applicability are confirmed by equipment data.`;
 }
 
 function partFunction(part: MtuPart, locale: Locale) {
@@ -137,13 +131,16 @@ export async function generateMetadata({
   const name = partName(part, locale);
 
   return {
-    title: `MTU ${part.partNumber} — ${name} | LONGQING`,
+    title:
+      locale === "ru"
+        ? `MTU ${part.partNumber} — ${part.nameRu} / ${part.nameEn} | LONGQING`
+        : `MTU ${part.partNumber} — ${name} | LONGQING`,
     description:
       locale === "ru"
-        ? `${name}. Поставка по B2B-запросу. Наличие, срок поставки и совместимость уточняются по артикулу и данным оборудования.`
+        ? `${part.nameRu} / ${part.nameEn}. B2B-запрос по артикулу MTU ${part.partNumber}. Наличие, срок поставки и совместимость уточняются по данным оборудования.`
         : locale === "zh"
           ? `${name}. B2B 询价处理。库存、交期和兼容性将根据零件号和设备信息确认。`
-          : `${name}. B2B request processing. Availability, lead time, and compatibility are confirmed by part number and equipment data.`,
+          : `${part.nameEn}. B2B request for MTU ${part.partNumber}. Stock status, lead time, and compatibility are confirmed by part number and equipment data.`,
     alternates: {
       canonical: `/${locale}/catalog/mtu/${slug}`,
       languages: {
@@ -194,12 +191,15 @@ export default async function MtuPartPage({
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-700">
                 {text.eyebrow}
               </p>
-              <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight md:text-5xl">
+              <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight md:text-4xl">
                 {name}
               </h1>
+              {locale === "ru" ? (
+                <p className="mt-2 text-lg font-medium text-slate-500">{part.nameEn}</p>
+              ) : null}
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xl font-bold text-slate-950 md:text-2xl">
-                  MTU {part.partNumber}
+                <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-lg font-semibold text-slate-950 md:text-xl">
+                  {text.partNumber}: MTU {part.partNumber}
                 </p>
                 <span className="rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
                   {text.availability}
@@ -222,8 +222,7 @@ export default async function MtuPartPage({
                   [text.brand, part.brand],
                   [text.category, part.category],
                   [text.partNumber, part.partNumber],
-                  [text.status, text.availability],
-                  [text.price, text.priceValue]
+                  [text.status, text.availability]
                 ].map(([label, value]) => (
                   <div key={label} className="border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
                     <dt className="text-slate-500">{label}</dt>

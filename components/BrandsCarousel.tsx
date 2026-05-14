@@ -20,7 +20,7 @@ export function BrandsCarousel({
     <Link
       key={`${row}-${brand.slug}-${index}`}
       href={`/${locale}/brands/${brand.slug}`}
-      className="brand-tile flex h-24 w-52 shrink-0 items-center justify-center rounded border px-5 text-center text-sm font-semibold text-dark md:h-28 md:w-60"
+      className="brand-tile flex h-16 w-36 shrink-0 items-center justify-center rounded border px-3 text-center text-xs font-semibold text-dark sm:h-20 sm:w-44 md:h-28 md:w-60 md:px-5 md:text-sm"
     >
       {brand.name[locale]}
     </Link>
@@ -50,11 +50,11 @@ export function BrandsCarousel({
           </Link>
         </div>
       </div>
-      <div className="-mx-5 grid gap-5 overflow-x-auto md:overflow-hidden">
-        <div className="brand-marquee flex w-max gap-4 px-5 md:gap-5">
+      <div className="-mx-5 grid gap-3 overflow-x-auto md:gap-5 md:overflow-hidden">
+        <div className="brand-marquee flex w-max gap-3 px-5 md:gap-5">
           {firstRow.map((brand, index) => renderBrand(brand, index, "first"))}
         </div>
-        <div className="brand-marquee-reverse flex w-max gap-4 px-5 md:gap-5">
+        <div className="brand-marquee-reverse flex w-max gap-3 px-5 md:gap-5">
           {secondRow.map((brand, index) => renderBrand(brand, index, "second"))}
         </div>
       </div>

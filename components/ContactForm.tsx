@@ -53,9 +53,8 @@ const labels: Record<
     email: "E-mail",
     message: "Описание задачи",
     files: "Файлы",
-    consentPrefix:
-      "Я согласен на обработку персональных данных и принимаю",
-    consentLink: "Политику конфиденциальности",
+    consentPrefix: "Я ознакомлен с",
+    consentLink: "Политикой конфиденциальности",
     submit: "Получить КП",
     sending: "Отправляем...",
     microcopy: "Ответим в течение 1 рабочего дня.",
@@ -76,7 +75,7 @@ const labels: Record<
     email: "邮箱",
     message: "需求描述",
     files: "文件",
-    consentPrefix: "我同意处理个人数据并接受",
+    consentPrefix: "我已阅读",
     consentLink: "隐私政策",
     submit: "获取报价",
     sending: "正在发送...",
@@ -99,7 +98,7 @@ const labels: Record<
     email: "E-mail",
     message: "Task description",
     files: "Files",
-    consentPrefix: "I consent to personal data processing and accept the",
+    consentPrefix: "I have read the",
     consentLink: "Privacy Policy",
     submit: "Get proposal",
     sending: "Sending...",
@@ -277,7 +276,11 @@ export function ContactForm({
               <Link href={`/${locale}/privacy`} className="text-accent underline-offset-4 hover:underline">
                 {text.consentLink}
               </Link>
-              .
+              {locale === "ru"
+                ? " и даю согласие на обработку персональных данных."
+                : locale === "zh"
+                  ? "，并同意处理个人数据。"
+                  : " and consent to personal data processing."}
             </span>
           </label>
           {errors.consent ? (
