@@ -272,15 +272,43 @@ export function ContactForm({
             <input type="checkbox" className="mt-1 size-4 accent-accent" {...register("consent")} />
             <span className="text-accent" aria-hidden="true">*</span>
             <span>
-              {text.consentPrefix}{" "}
-              <Link href={`/${locale}/privacy`} className="text-accent underline-offset-4 hover:underline">
-                {text.consentLink}
-              </Link>
-              {locale === "ru"
-                ? " и даю согласие на обработку персональных данных."
-                : locale === "zh"
-                  ? "，并同意处理个人数据。"
-                  : " and consent to personal data processing."}
+              {locale === "ru" ? (
+                <>
+                  Я ознакомлен и принимаю условия{" "}
+                  <Link href={`/${locale}/terms`} className="text-accent underline-offset-4 hover:underline">
+                    Пользовательского соглашения
+                  </Link>{" "}
+                  и{" "}
+                  <Link href={`/${locale}/privacy`} className="text-accent underline-offset-4 hover:underline">
+                    Политики конфиденциальности
+                  </Link>{" "}
+                  и даю согласие на обработку моих персональных данных.
+                </>
+              ) : locale === "zh" ? (
+                <>
+                  我已阅读并接受
+                  <Link href={`/${locale}/terms`} className="text-accent underline-offset-4 hover:underline">
+                    使用条款
+                  </Link>
+                  和
+                  <Link href={`/${locale}/privacy`} className="text-accent underline-offset-4 hover:underline">
+                    隐私政策
+                  </Link>
+                  ，并同意处理我的个人数据。
+                </>
+              ) : (
+                <>
+                  I have read and accept the{" "}
+                  <Link href={`/${locale}/terms`} className="text-accent underline-offset-4 hover:underline">
+                    Terms of Use
+                  </Link>{" "}
+                  and{" "}
+                  <Link href={`/${locale}/privacy`} className="text-accent underline-offset-4 hover:underline">
+                    Privacy Policy
+                  </Link>{" "}
+                  and consent to the processing of my personal data.
+                </>
+              )}
             </span>
           </label>
           {errors.consent ? (
