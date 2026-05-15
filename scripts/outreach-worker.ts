@@ -126,7 +126,7 @@ async function tick() {
 
   const database = getOutreachDb();
   const recipient = database
-    .prepare("select * from outreach_recipients where status = 'queued' order by created_at asc limit 1")
+    .prepare("select * from outreach_recipients where status = 'queued' order by queue_position is null, queue_position asc, created_at asc, id asc limit 1")
     .get() as RecipientRow | undefined;
   if (!recipient) {
     saveSettings({enabled: false, next_send_after: null});
@@ -138,14 +138,14 @@ async function tick() {
     const messageId = await sendRecipient(recipient);
     const now = new Date().toISOString();
     database
-      .prepare("update outreach_recipients set status='sent', last_sent_at=?, updated_at=?, last_error=null where id=?")
+      .prepare("update outreach_recipients set status='sent', queue_position=null, last_sent_at=?, updated_at=?, last_error=null where id=?")
       .run(now, now, recipient.id);
     saveSettings({next_send_after: nextDelayIso()});
     addEvent("send_success", recipient.id, messageId, {sent_append_status: "success"});
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 400) : "Worker error";
     database
-      .prepare("update outreach_recipients set status='error', last_error=?, updated_at=? where id=?")
+      .prepare("update outreach_recipients set status='error', queue_position=null, last_error=?, updated_at=? where id=?")
       .run(message, new Date().toISOString(), recipient.id);
     saveSettings({enabled: false});
     addEvent("send_error", recipient.id, null, {error: message});

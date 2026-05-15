@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import {getOutreachDb, emailHash, addEvent, matchSentHistory} from "@/lib/outreach/db";
+import {getOutreachDb, emailHash, addEvent, matchSentHistory, nextQueuePosition, normalizeQueuePositions} from "@/lib/outreach/db";
 import {isValidOutreachEmail} from "@/lib/outreach/template";
 
 type ParsedRow = {
@@ -116,10 +116,11 @@ export async function importRecipientsFile(file: File) {
     ).map((row) => row.email_hash)
   );
   const insert = database.prepare(
-    "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, source_upload_id, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?, ?)"
+    "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, source_upload_id, queue_position, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?)"
   );
   const seenInUpload = new Set<string>();
   let historyMatches = 0;
+  let queuePosition = nextQueuePosition(database);
 
   for (const row of rows) {
     if (!row.company || !isValidOutreachEmail(row.email)) {
@@ -135,10 +136,12 @@ export async function importRecipientsFile(file: File) {
     if (match.type !== "none") {
       historyMatches += 1;
     }
-    insert.run(row.company, row.email, hash, now, now, uploadId, match.type, match.detail);
+    insert.run(row.company, row.email, hash, now, now, uploadId, queuePosition, match.type, match.detail);
+    queuePosition += 1;
     seenInUpload.add(hash);
     imported += 1;
   }
+  normalizeQueuePositions(database);
 
   const skipped = skippedDuplicates + skippedInvalid;
   database

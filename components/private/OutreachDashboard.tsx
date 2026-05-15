@@ -31,6 +31,7 @@ type Recipient = {
   updated_at: string;
   last_sent_at: string | null;
   last_error: string | null;
+  queue_position: number | null;
   history_match_type: "none" | "full" | "email" | "company";
   history_match_detail: string | null;
 };
@@ -78,6 +79,7 @@ export function OutreachDashboard() {
   const [editDraft, setEditDraft] = useState({company: "", email: ""});
   const [manualRecipient, setManualRecipient] = useState({company: "", email: ""});
   const [manualMessage, setManualMessage] = useState("");
+  const [draggedQueueId, setDraggedQueueId] = useState<number | null>(null);
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState("");
 
@@ -229,6 +231,39 @@ export function OutreachDashboard() {
     const body = await parseJsonResponse(response);
     setMessage(response.ok ? "Запись удалена из отправленных" : translateError(body.error));
     if (response.ok) {
+      await refresh();
+    }
+  }
+
+  async function reorderQueue(targetId: number) {
+    if (!draggedQueueId || draggedQueueId === targetId) {
+      setDraggedQueueId(null);
+      return;
+    }
+    const sourceIndex = queue.findIndex((row) => row.id === draggedQueueId);
+    const targetIndex = queue.findIndex((row) => row.id === targetId);
+    if (sourceIndex < 0 || targetIndex < 0) {
+      setDraggedQueueId(null);
+      return;
+    }
+    const nextQueue = [...queue];
+    const [moved] = nextQueue.splice(sourceIndex, 1);
+    nextQueue.splice(targetIndex, 0, moved);
+    const numberedQueue = nextQueue.map((row, index) => ({...row, queue_position: index + 1}));
+    setQueue(numberedQueue);
+    setDraggedQueueId(null);
+
+    const response = await fetch("/api/private/outreach/recipients/reorder", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ids: numberedQueue.map((row) => row.id)})
+    });
+    const body = await parseJsonResponse(response);
+    if (response.ok) {
+      setQueue((body.recipients as Recipient[] | undefined) ?? numberedQueue);
+      setMessage("Порядок очереди обновлён");
+    } else {
+      setMessage(translateError(body.error));
       await refresh();
     }
   }
@@ -411,6 +446,10 @@ export function OutreachDashboard() {
       <Table
         title="Очередь"
         rows={queue}
+        queueMode
+        draggedRowId={draggedQueueId}
+        onDragStart={setDraggedQueueId}
+        onDropRow={reorderQueue}
         editable
         editingId={editingId}
         editDraft={editDraft}
@@ -547,6 +586,10 @@ function numberValue(value: string) {
 function Table({
   title,
   rows,
+  queueMode = false,
+  draggedRowId = null,
+  onDragStart,
+  onDropRow,
   editable = false,
   editingId = null,
   editDraft = {company: "", email: ""},
@@ -560,6 +603,10 @@ function Table({
 }: {
   title: string;
   rows: Recipient[];
+  queueMode?: boolean;
+  draggedRowId?: number | null;
+  onDragStart?: (id: number | null) => void;
+  onDropRow?: (id: number) => void;
   editable?: boolean;
   editingId?: number | null;
   editDraft?: {company: string; email: string};
@@ -585,11 +632,19 @@ function Table({
               <th className="p-3">Обновлено</th>
               <th className="p-3">Ошибка</th>
               {editable || removable ? <th className="p-3">Действия</th> : null}
+              {queueMode ? <th className="p-3 text-right">Порядок</th> : null}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.id} className={`border-t border-slate-100 ${row.history_match_type !== "none" ? "bg-rose-50" : ""}`}>
+            {rows.map((row, index) => (
+              <tr
+                key={row.id}
+                className={`border-t border-slate-100 ${row.history_match_type !== "none" ? "bg-rose-50" : ""} ${
+                  draggedRowId === row.id ? "opacity-60" : ""
+                }`}
+                onDragOver={queueMode ? (event) => event.preventDefault() : undefined}
+                onDrop={queueMode ? () => onDropRow?.(row.id) : undefined}
+              >
                 <td className="p-3">
                   {editingId === row.id ? (
                     <input
@@ -612,7 +667,7 @@ function Table({
                     row.email
                   )}
                 </td>
-                <td className="p-3">{translateRecipientStatus(row.status)}</td>
+                <td className="p-3">{translateRecipientStatus(row.status, queueMode ? index : undefined, row.queue_position)}</td>
                 <td className="p-3 text-xs text-slate-600">
                   {row.history_match_type === "none" ? "—" : (
                     <span title={row.history_match_detail ?? undefined}>{translateHistoryMatch(row.history_match_type)}</span>
@@ -645,6 +700,21 @@ function Table({
                         Удалить
                       </button>
                     )}
+                  </td>
+                ) : null}
+                {queueMode ? (
+                  <td className="p-3 text-right">
+                    <button
+                      aria-label={`Перетащить: отправка ${row.queue_position ?? index + 1}`}
+                      className="inline-flex h-9 w-9 cursor-grab items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
+                      draggable
+                      onDragStart={() => onDragStart?.(row.id)}
+                      onDragEnd={() => onDragStart?.(null)}
+                      type="button"
+                      title="Перетащить выше или ниже в очереди"
+                    >
+                      ☰
+                    </button>
                   </td>
                 ) : null}
               </tr>
@@ -690,7 +760,10 @@ function UploadSummary({summary}: {summary: Record<string, unknown>}) {
   );
 }
 
-function translateRecipientStatus(status: string) {
+function translateRecipientStatus(status: string, queueIndex?: number, queuePosition?: number | null) {
+  if (status === "queued" && queueIndex !== undefined) {
+    return `Отправка ${queuePosition ?? queueIndex + 1}`;
+  }
   const labels: Record<string, string> = {
     queued: "В очереди",
     paused: "На паузе",
@@ -723,6 +796,7 @@ function translateEventType(type: string) {
     recipient_created: "Получатель добавлен",
     recipient_reused: "Получатель возвращён в очередь",
     recipient_deleted: "Запись удалена",
+    queue_reordered: "Порядок очереди изменён",
     auto_paused_queue_empty: "Автопауза: очередь закончилась",
     send_success: "Письмо отправлено",
     send_error: "Ошибка отправки",
@@ -767,6 +841,8 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     recipient_not_found: "Получатель не найден",
     recipient_delete_failed: "Не удалось удалить запись",
     recipient_delete_sent_only: "Удалять вручную можно только записи из отправленных",
+    queue_order_required: "Не передан порядок очереди",
+    queue_reorder_failed: "Не удалось изменить порядок очереди",
     outreach_send_disabled: "Отправка выключена в server env",
     smtp_or_imap_env_missing: "Не настроены SMTP/IMAP переменные на сервере",
     copy_not_approved: "Сначала подтвердите согласование текста письма",

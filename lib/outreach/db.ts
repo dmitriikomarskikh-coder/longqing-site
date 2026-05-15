@@ -45,6 +45,7 @@ export type RecipientRow = {
   last_sent_at: string | null;
   last_error: string | null;
   source_upload_id: number | null;
+  queue_position: number | null;
   history_match_type: "none" | "full" | "email" | "company";
   history_match_detail: string | null;
 };
@@ -108,6 +109,7 @@ function initOutreachDb(database: Database.Database) {
       last_sent_at text,
       last_error text,
       source_upload_id integer,
+      queue_position integer,
       history_match_type text not null default 'none',
       history_match_detail text
     );
@@ -135,8 +137,10 @@ function initOutreachDb(database: Database.Database) {
     );
   `);
   migrateRecipientsTable(database);
+  addColumnIfMissing(database, "outreach_recipients", "queue_position", "integer");
   addColumnIfMissing(database, "outreach_recipients", "history_match_type", "text not null default 'none'");
   addColumnIfMissing(database, "outreach_recipients", "history_match_detail", "text");
+  normalizeQueuePositions(database);
   database
     .prepare("insert or ignore into outreach_template (id, subject, body, updated_at) values (1, ?, ?, ?)")
     .run(defaultOutreachTemplate.subject, defaultOutreachTemplate.body, new Date().toISOString());
@@ -178,19 +182,66 @@ function migrateRecipientsTable(database: Database.Database) {
       last_sent_at text,
       last_error text,
       source_upload_id integer,
+      queue_position integer,
       history_match_type text not null default 'none',
       history_match_detail text
     );
     insert into outreach_recipients (
       id, company, email, email_hash, segment, city, note, status, created_at, updated_at,
-      last_sent_at, last_error, source_upload_id, history_match_type, history_match_detail
+      last_sent_at, last_error, source_upload_id, queue_position, history_match_type, history_match_detail
     )
     select
       id, company, email, email_hash, segment, city, note, status, created_at, updated_at,
-      last_sent_at, last_error, source_upload_id, 'none', null
+      last_sent_at, last_error, source_upload_id, null, 'none', null
     from outreach_recipients_old_unique;
     drop table outreach_recipients_old_unique;
   `);
+}
+
+export function normalizeQueuePositions(database = getOutreachDb()) {
+  const rows = database
+    .prepare(
+      "select id from outreach_recipients where status = 'queued' order by queue_position is null, queue_position asc, created_at asc, id asc"
+    )
+    .all() as Array<{id: number}>;
+  const update = database.prepare("update outreach_recipients set queue_position = ? where id = ?");
+  const clear = database.prepare("update outreach_recipients set queue_position = null where status != 'queued' and queue_position is not null");
+  const transaction = database.transaction(() => {
+    rows.forEach((row, index) => update.run(index + 1, row.id));
+    clear.run();
+  });
+  transaction();
+}
+
+export function nextQueuePosition(database = getOutreachDb()) {
+  const row = database
+    .prepare("select coalesce(max(queue_position), 0) + 1 as next from outreach_recipients where status = 'queued'")
+    .get() as {next: number};
+  return row.next;
+}
+
+export function reorderQueuedRecipients(ids: number[]) {
+  const database = getOutreachDb();
+  const uniqueIds = [...new Set(ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+  if (uniqueIds.length === 0) {
+    throw new Error("queue_order_required");
+  }
+  const queuedRows = database
+    .prepare(
+      "select id from outreach_recipients where status = 'queued' order by queue_position is null, queue_position asc, created_at asc, id asc"
+    )
+    .all() as Array<{id: number}>;
+  const queuedIds = new Set(queuedRows.map((row) => row.id));
+  const provided = uniqueIds.filter((id) => queuedIds.has(id));
+  const missing = queuedRows.map((row) => row.id).filter((id) => !provided.includes(id));
+  const ordered = [...provided, ...missing];
+  const update = database.prepare("update outreach_recipients set queue_position = ?, updated_at = ? where id = ?");
+  const now = new Date().toISOString();
+  database.transaction(() => {
+    ordered.forEach((id, index) => update.run(index + 1, now, id));
+  })();
+  addEvent("queue_reordered", null, null, {count: ordered.length});
+  return listRecipients("queued");
 }
 
 export function getSettings(): OutreachSettings {
@@ -329,26 +380,30 @@ export function deleteSentRecipient(id: number) {
 }
 
 export function createRecipient(input: {company: string; email: string}) {
+  const database = getOutreachDb();
   const company = input.company.trim();
   const email = input.email.trim().toLowerCase();
   if (!company || !email) {
     throw new Error("recipient_fields_required");
   }
   const hash = emailHash(email);
-  const duplicate = getOutreachDb()
-    .prepare("select id, status from outreach_recipients where email_hash = ? and status != 'sent' order by updated_at desc limit 1")
-    .get(hash) as {id: number; status: OutreachRecipientStatus} | undefined;
+  const duplicate = database
+    .prepare("select id, status, queue_position from outreach_recipients where email_hash = ? and status != 'sent' order by updated_at desc limit 1")
+    .get(hash) as {id: number; status: OutreachRecipientStatus; queue_position: number | null} | undefined;
   const match = matchSentHistory(company, email);
   const now = new Date().toISOString();
   if (duplicate) {
     if (["unsubscribed", "bounced"].includes(duplicate.status)) {
       throw new Error("recipient_blocked_status");
     }
-    getOutreachDb()
+    const queuePosition =
+      duplicate.status === "queued" && duplicate.queue_position ? duplicate.queue_position : nextQueuePosition(database);
+    database
       .prepare(
-        "update outreach_recipients set company = ?, email = ?, email_hash = ?, status = 'queued', last_error = null, history_match_type = ?, history_match_detail = ?, updated_at = ? where id = ?"
+        "update outreach_recipients set company = ?, email = ?, email_hash = ?, status = 'queued', last_error = null, queue_position = ?, history_match_type = ?, history_match_detail = ?, updated_at = ? where id = ?"
       )
-      .run(company, email, hash, match.type, match.detail, now, duplicate.id);
+      .run(company, email, hash, queuePosition, match.type, match.detail, now, duplicate.id);
+    normalizeQueuePositions(database);
     addEvent("recipient_reused", duplicate.id, null, {previous_status: duplicate.status, history_match_type: match.type});
     return {
       ok: true,
@@ -358,6 +413,7 @@ export function createRecipient(input: {company: string; email: string}) {
         company,
         email,
         status: "queued",
+        queue_position: queuePosition,
         created_at: now,
         updated_at: now,
         history_match_type: match.type,
@@ -365,11 +421,12 @@ export function createRecipient(input: {company: string; email: string}) {
       }
     };
   }
-  const result = getOutreachDb()
+  const queuePosition = nextQueuePosition(database);
+  const result = database
     .prepare(
-      "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?)"
+      "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, queue_position, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?, ?)"
     )
-    .run(company, email, hash, now, now, match.type, match.detail);
+    .run(company, email, hash, now, now, queuePosition, match.type, match.detail);
   const id = Number(result.lastInsertRowid);
   addEvent("recipient_created", id, null, {history_match_type: match.type});
   return {
@@ -379,6 +436,7 @@ export function createRecipient(input: {company: string; email: string}) {
       company,
       email,
       status: "queued",
+      queue_position: queuePosition,
       created_at: now,
       updated_at: now,
       history_match_type: match.type,
@@ -412,6 +470,14 @@ export function dashboardStatus() {
 export function listRecipients(status?: string) {
   const database = getOutreachDb();
   if (status) {
+    if (status === "queued") {
+      normalizeQueuePositions(database);
+      return database
+        .prepare(
+          "select * from outreach_recipients where status = ? order by queue_position is null, queue_position asc, created_at asc, id asc limit 200"
+        )
+        .all(status) as RecipientRow[];
+    }
     return database
       .prepare("select * from outreach_recipients where status = ? order by updated_at desc limit 200")
       .all(status) as RecipientRow[];
