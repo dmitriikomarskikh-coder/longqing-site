@@ -1,5 +1,6 @@
 "use client";
 
+import type {FormEvent} from "react";
 import {useEffect, useMemo, useState} from "react";
 
 type Status = {
@@ -49,8 +50,23 @@ type TemplateState = {
   preview: {subject: string; text: string; html: string};
 };
 
+type SettingsDraft = Status["settings"];
+
+const defaultSettingsDraft: SettingsDraft = {
+  enabled: false,
+  copy_approved: false,
+  allowed_days: [1, 2, 3, 4, 5],
+  allowed_time_start: "10:00",
+  allowed_time_end: "18:00",
+  min_delay_minutes: 8,
+  max_delay_minutes: 25,
+  daily_limit: 10,
+  next_send_after: null
+};
+
 export function OutreachDashboard() {
   const [status, setStatus] = useState<Status | null>(null);
+  const [settingsDraft, setSettingsDraft] = useState<SettingsDraft>(defaultSettingsDraft);
   const [queue, setQueue] = useState<Recipient[]>([]);
   const [sent, setSent] = useState<Recipient[]>([]);
   const [errors, setErrors] = useState<Recipient[]>([]);
@@ -60,6 +76,7 @@ export function OutreachDashboard() {
   const [previewRecipientId, setPreviewRecipientId] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState({company: "", email: ""});
+  const [manualRecipient, setManualRecipient] = useState({company: "", email: ""});
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState("");
 
@@ -76,6 +93,7 @@ export function OutreachDashboard() {
       fetch("/api/private/outreach/template").then((response) => response.json())
     ]);
     setStatus(nextStatus);
+    setSettingsDraft(nextStatus.settings ?? defaultSettingsDraft);
     setQueue(nextQueue.recipients ?? []);
     setSent(nextSent.recipients ?? []);
     setErrors(nextErrors.recipients ?? []);
@@ -111,18 +129,16 @@ export function OutreachDashboard() {
     }
   }
 
-  async function saveSettings(formData: FormData) {
-    const allowedDays = weekdays
-      .map((_, index) => index)
-      .filter((index) => formData.get(`day-${index}`) === "on");
+  async function saveSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const payload = {
-      allowed_days: allowedDays,
-      allowed_time_start: formData.get("allowed_time_start"),
-      allowed_time_end: formData.get("allowed_time_end"),
-      min_delay_minutes: Number(formData.get("min_delay_minutes")),
-      max_delay_minutes: Number(formData.get("max_delay_minutes")),
-      daily_limit: Number(formData.get("daily_limit")),
-      copy_approved: formData.get("copy_approved") === "on"
+      allowed_days: settingsDraft.allowed_days,
+      allowed_time_start: settingsDraft.allowed_time_start,
+      allowed_time_end: settingsDraft.allowed_time_end,
+      min_delay_minutes: settingsDraft.min_delay_minutes,
+      max_delay_minutes: settingsDraft.max_delay_minutes,
+      daily_limit: settingsDraft.daily_limit,
+      copy_approved: settingsDraft.copy_approved
     };
     const response = await fetch("/api/private/outreach/settings", {
       method: "POST",
@@ -132,6 +148,21 @@ export function OutreachDashboard() {
     const body = await response.json();
     setMessage(response.ok ? "Настройки сохранены" : translateError(body.error));
     await refresh();
+  }
+
+  async function addManualRecipient(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const response = await fetch("/api/private/outreach/recipients", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(manualRecipient)
+    });
+    const body = await parseJsonResponse(response);
+    setMessage(response.ok ? "Получатель добавлен в очередь" : translateError(body.error));
+    if (response.ok) {
+      setManualRecipient({company: "", email: ""});
+      await refresh();
+    }
   }
 
   async function saveTemplate() {
@@ -223,25 +254,70 @@ export function OutreachDashboard() {
       </section>
 
       {settings ? (
-        <form action={saveSettings} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <form onSubmit={saveSettings} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-xl font-semibold">Настройки</h2>
           <div className="flex flex-wrap gap-3">
             {weekdays.map((day, index) => (
               <label key={day} className="flex items-center gap-2 text-sm">
-                <input name={`day-${index}`} type="checkbox" defaultChecked={settings.allowed_days.includes(index)} />
+                <input
+                  name={`day-${index}`}
+                  type="checkbox"
+                  checked={settingsDraft.allowed_days.includes(index)}
+                  onChange={(event) =>
+                    setSettingsDraft((current) => ({
+                      ...current,
+                      allowed_days: event.target.checked
+                        ? [...new Set([...current.allowed_days, index])].sort((left, right) => left - right)
+                        : current.allowed_days.filter((dayIndex) => dayIndex !== index)
+                    }))
+                  }
+                />
                 {day}
               </label>
             ))}
           </div>
           <div className="grid gap-3 md:grid-cols-5">
-            <Input name="allowed_time_start" label="Начало, МСК" defaultValue={settings.allowed_time_start} />
-            <Input name="allowed_time_end" label="Окончание, МСК" defaultValue={settings.allowed_time_end} />
-            <Input name="min_delay_minutes" label="Мин. пауза, мин" defaultValue={settings.min_delay_minutes} />
-            <Input name="max_delay_minutes" label="Макс. пауза, мин" defaultValue={settings.max_delay_minutes} />
-            <Input name="daily_limit" label="Лимит в день" defaultValue={settings.daily_limit} />
+            <Input
+              name="allowed_time_start"
+              label="Начало, МСК"
+              value={settingsDraft.allowed_time_start}
+              onChange={(value) => setSettingsDraft((current) => ({...current, allowed_time_start: value}))}
+            />
+            <Input
+              name="allowed_time_end"
+              label="Окончание, МСК"
+              value={settingsDraft.allowed_time_end}
+              onChange={(value) => setSettingsDraft((current) => ({...current, allowed_time_end: value}))}
+            />
+            <Input
+              name="min_delay_minutes"
+              label="Мин. пауза, мин"
+              type="number"
+              value={settingsDraft.min_delay_minutes}
+              onChange={(value) => setSettingsDraft((current) => ({...current, min_delay_minutes: numberValue(value)}))}
+            />
+            <Input
+              name="max_delay_minutes"
+              label="Макс. пауза, мин"
+              type="number"
+              value={settingsDraft.max_delay_minutes}
+              onChange={(value) => setSettingsDraft((current) => ({...current, max_delay_minutes: numberValue(value)}))}
+            />
+            <Input
+              name="daily_limit"
+              label="Лимит в день"
+              type="number"
+              value={settingsDraft.daily_limit}
+              onChange={(value) => setSettingsDraft((current) => ({...current, daily_limit: numberValue(value)}))}
+            />
           </div>
           <label className="flex items-center gap-2 text-sm">
-            <input name="copy_approved" type="checkbox" defaultChecked={settings.copy_approved} />
+            <input
+              name="copy_approved"
+              type="checkbox"
+              checked={settingsDraft.copy_approved}
+              onChange={(event) => setSettingsDraft((current) => ({...current, copy_approved: event.target.checked}))}
+            />
             Текст письма согласован
           </label>
           <button className="btn-primary h-10 w-fit px-4 text-sm" type="submit">
@@ -261,6 +337,31 @@ export function OutreachDashboard() {
           Загрузить
         </button>
         {uploadSummary ? <UploadSummary summary={uploadSummary} /> : null}
+      </form>
+
+      <form onSubmit={addManualRecipient} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-xl font-semibold">Добавить получателя вручную</h2>
+        <p className="text-sm text-slate-600">
+          Получатель попадёт в очередь. Если компания или e-mail совпадают с историей отправок, строка будет подсвечена.
+        </p>
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+          <Input
+            name="manual_company"
+            label="Компания"
+            value={manualRecipient.company}
+            onChange={(value) => setManualRecipient((current) => ({...current, company: value}))}
+          />
+          <Input
+            name="manual_email"
+            label="E-mail"
+            type="email"
+            value={manualRecipient.email}
+            onChange={(value) => setManualRecipient((current) => ({...current, email: value}))}
+          />
+          <button className="btn-primary h-10 px-4 text-sm" type="submit">
+            Добавить
+          </button>
+        </div>
       </form>
 
       <Table
@@ -361,13 +462,36 @@ function Stat({label, value}: {label: string; value: string}) {
   );
 }
 
-function Input({name, label, defaultValue}: {name: string; label: string; defaultValue: string | number}) {
+function Input({
+  name,
+  label,
+  value,
+  type = "text",
+  onChange
+}: {
+  name: string;
+  label: string;
+  value: string | number;
+  type?: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <label className="grid gap-1 text-sm text-slate-600">
       {label}
-      <input name={name} defaultValue={defaultValue} className="h-10 rounded border border-slate-200 px-3 text-slate-950" />
+      <input
+        name={name}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 rounded border border-slate-200 px-3 text-slate-950"
+      />
     </label>
   );
+}
+
+function numberValue(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function Table({
@@ -538,6 +662,7 @@ function translateEventType(type: string) {
     settings_changed: "Настройки изменены",
     upload: "Загрузка базы",
     import: "Импорт",
+    recipient_created: "Получатель добавлен",
     send_success: "Письмо отправлено",
     send_error: "Ошибка отправки",
     sent_append_failed: "Не удалось сохранить в Отправленные",
@@ -574,10 +699,15 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     company_required: "Укажите компанию",
     email_invalid: "Укажите корректный e-mail",
     recipient_email_duplicate: "Такой e-mail уже есть в активной очереди",
+    recipient_create_failed: "Не удалось добавить получателя",
+    recipient_fields_required: "Укажите компанию и e-mail",
     recipient_update_failed: "Не удалось обновить получателя",
     recipient_not_found: "Получатель не найден",
+    min_delay_invalid: "Укажите корректную минимальную паузу",
     min_delay_too_low: "Минимальная пауза слишком маленькая",
+    max_delay_invalid: "Укажите корректную максимальную паузу",
     max_delay_must_exceed_min_delay: "Максимальная пауза должна быть больше минимальной",
+    daily_limit_invalid: "Укажите корректный дневной лимит",
     daily_limit_too_high: "Дневной лимит слишком высокий"
   };
   return labels[error] ?? error;

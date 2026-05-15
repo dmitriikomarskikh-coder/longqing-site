@@ -14,14 +14,37 @@ export async function POST(request: Request) {
   const minDelay = Number(body.min_delay_minutes);
   const maxDelay = Number(body.max_delay_minutes);
   const dailyLimit = Number(body.daily_limit);
+  const allowedDays = Array.isArray(body.allowed_days)
+    ? body.allowed_days.map((day: unknown) => Number(day)).filter((day: number) => Number.isInteger(day) && day >= 0 && day <= 6)
+    : undefined;
+  if (!Number.isFinite(minDelay)) {
+    return Response.json({error: "min_delay_invalid"}, {status: 400, headers: privateHeaders()});
+  }
+  if (!Number.isFinite(maxDelay)) {
+    return Response.json({error: "max_delay_invalid"}, {status: 400, headers: privateHeaders()});
+  }
   if (Number.isFinite(minDelay) && minDelay < 3) {
     return Response.json({error: "min_delay_too_low"}, {status: 400, headers: privateHeaders()});
   }
   if (Number.isFinite(maxDelay) && Number.isFinite(minDelay) && maxDelay <= minDelay) {
     return Response.json({error: "max_delay_must_exceed_min_delay"}, {status: 400, headers: privateHeaders()});
   }
+  if (!Number.isFinite(dailyLimit) || dailyLimit < 1) {
+    return Response.json({error: "daily_limit_invalid"}, {status: 400, headers: privateHeaders()});
+  }
   if (Number.isFinite(dailyLimit) && dailyLimit > 30) {
     return Response.json({error: "daily_limit_too_high"}, {status: 400, headers: privateHeaders()});
   }
-  return Response.json(saveSettings(body), {headers: privateHeaders()});
+  return Response.json(
+    saveSettings({
+      allowed_days: allowedDays,
+      allowed_time_start: typeof body.allowed_time_start === "string" ? body.allowed_time_start : undefined,
+      allowed_time_end: typeof body.allowed_time_end === "string" ? body.allowed_time_end : undefined,
+      min_delay_minutes: minDelay,
+      max_delay_minutes: maxDelay,
+      daily_limit: dailyLimit,
+      copy_approved: Boolean(body.copy_approved)
+    }),
+    {headers: privateHeaders()}
+  );
 }

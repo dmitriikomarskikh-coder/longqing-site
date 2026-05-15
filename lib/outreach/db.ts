@@ -207,9 +207,10 @@ export function getSettings(): OutreachSettings {
 
 export function saveSettings(input: Partial<OutreachSettings>) {
   const current = getSettings();
+  const cleanInput = Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) as Partial<OutreachSettings>;
   const next: OutreachSettings = {
     ...current,
-    ...input,
+    ...cleanInput,
     allowed_timezone: "Europe/Moscow",
     smtp_host: "smtp.timeweb.ru",
     smtp_user: "office@longqingtrade.com",
@@ -223,7 +224,7 @@ export function saveSettings(input: Partial<OutreachSettings>) {
   for (const [key, value] of Object.entries(next)) {
     stmt.run(key, JSON.stringify(value), now);
   }
-  addEvent("settings_changed", null, null, {changed: Object.keys(input)});
+  addEvent("settings_changed", null, null, {changed: Object.keys(cleanInput)});
   return next;
 }
 
@@ -311,6 +312,43 @@ export function updateRecipient(id: number, input: {company: string; email: stri
     .run(company, email, hash, match.type, match.detail, now, id);
   addEvent("recipient_updated", id, null, {history_match_type: match.type});
   return {ok: true};
+}
+
+export function createRecipient(input: {company: string; email: string}) {
+  const company = input.company.trim();
+  const email = input.email.trim().toLowerCase();
+  if (!company || !email) {
+    throw new Error("recipient_fields_required");
+  }
+  const hash = emailHash(email);
+  const duplicate = getOutreachDb()
+    .prepare("select id from outreach_recipients where email_hash = ? and status != 'sent' limit 1")
+    .get(hash) as {id: number} | undefined;
+  if (duplicate) {
+    throw new Error("recipient_email_duplicate");
+  }
+  const match = matchSentHistory(company, email);
+  const now = new Date().toISOString();
+  const result = getOutreachDb()
+    .prepare(
+      "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?)"
+    )
+    .run(company, email, hash, now, now, match.type, match.detail);
+  const id = Number(result.lastInsertRowid);
+  addEvent("recipient_created", id, null, {history_match_type: match.type});
+  return {
+    ok: true,
+    recipient: {
+      id,
+      company,
+      email,
+      status: "queued",
+      created_at: now,
+      updated_at: now,
+      history_match_type: match.type,
+      history_match_detail: match.detail
+    }
+  };
 }
 
 export function dashboardStatus() {
