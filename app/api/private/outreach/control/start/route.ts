@@ -1,11 +1,15 @@
 import {guardPrivateApi, privateHeaders} from "@/lib/private/api";
 import {dashboardStatus, saveSettings} from "@/lib/outreach/db";
+import {hasOutreachSendCredentials, outreachEnv} from "@/lib/outreach/runtime-env";
 
 export async function POST() {
   const guard = await guardPrivateApi();
   if (guard) return guard;
   const status = dashboardStatus();
-  if (!process.env.SMTP_PASS || !process.env.IMAP_PASS) {
+  if (outreachEnv("OUTREACH_SEND_ENABLED") !== "true") {
+    return Response.json({error: "outreach_send_disabled"}, {status: 400, headers: privateHeaders()});
+  }
+  if (!hasOutreachSendCredentials()) {
     return Response.json({error: "smtp_or_imap_env_missing"}, {status: 400, headers: privateHeaders()});
   }
   if (!status.settings.copy_approved) {

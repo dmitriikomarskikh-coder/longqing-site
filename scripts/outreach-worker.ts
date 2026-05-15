@@ -1,15 +1,15 @@
 import process from "node:process";
-import dotenv from "dotenv";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
 import {getOutreachDb, getSettings, saveSettings, addEvent, getOutreachTemplate, type RecipientRow} from "../lib/outreach/db";
 import {renderOutreachEmail} from "../lib/outreach/template";
-
-dotenv.config({path: ".env.outreach", quiet: true});
+import {loadOutreachEnv, outreachEnv} from "../lib/outreach/runtime-env";
 
 function env(name: string) {
-  return process.env[name] ?? "";
+  return outreachEnv(name);
 }
+
+loadOutreachEnv();
 
 function assertSendEnv() {
   const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "IMAP_HOST", "IMAP_USER", "IMAP_PASS"];
@@ -55,8 +55,8 @@ async function sendRecipient(recipient: RecipientRow) {
   const content = renderOutreachEmail({company: recipient.company, email: recipient.email}, getOutreachTemplate());
   const transporter = nodemailer.createTransport({
     host: env("SMTP_HOST"),
-    port: Number(process.env.SMTP_PORT ?? 465),
-    secure: process.env.SMTP_SECURE !== "false",
+    port: Number(env("SMTP_PORT") || 465),
+    secure: env("SMTP_SECURE") !== "false",
     auth: {user: env("SMTP_USER"), pass: env("SMTP_PASS")},
     connectionTimeout: 10000,
     greetingTimeout: 10000,
@@ -78,8 +78,8 @@ async function sendRecipient(recipient: RecipientRow) {
 async function appendSent(to: string, subject: string, text: string, html: string) {
   const client = new ImapFlow({
     host: env("IMAP_HOST"),
-    port: Number(process.env.IMAP_PORT ?? 993),
-    secure: process.env.IMAP_SECURE !== "false",
+    port: Number(env("IMAP_PORT") || 993),
+    secure: env("IMAP_SECURE") !== "false",
     auth: {user: env("IMAP_USER"), pass: env("IMAP_PASS")},
     logger: false
   });
@@ -128,7 +128,11 @@ async function tick() {
   const recipient = database
     .prepare("select * from outreach_recipients where status = 'queued' order by created_at asc limit 1")
     .get() as RecipientRow | undefined;
-  if (!recipient) return;
+  if (!recipient) {
+    saveSettings({enabled: false, next_send_after: null});
+    addEvent("auto_paused_queue_empty", null, null, {});
+    return;
+  }
 
   try {
     const messageId = await sendRecipient(recipient);
