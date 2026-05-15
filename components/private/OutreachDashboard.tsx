@@ -146,7 +146,7 @@ export function OutreachDashboard() {
     const body = await parseJsonResponse(response);
     setMessage(
       response.ok
-        ? ((body as Partial<SettingsDraft>).unlimited_mode ? "Режим без лимитов включён" : "Рабочий режим: рассылка на паузе")
+        ? ((body as Partial<SettingsDraft>).unlimited_mode ? "Тестовый режим включён" : "Рабочий режим: рассылка на паузе")
         : translateError(body.error)
     );
     await refresh();
@@ -327,7 +327,7 @@ export function OutreachDashboard() {
       {message ? <p className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p> : null}
 
       <section className="grid gap-4 md:grid-cols-4">
-        <Stat label="Статус" value={isUnlimited ? "Без лимитов" : (settings?.enabled ? "Запущена" : "На паузе")} tone={isUnlimited ? "danger" : "default"} />
+        <Stat label="Статус" value={isUnlimited ? "В тестовом режиме" : (settings?.enabled ? "Запущена" : "На паузе")} tone={isUnlimited ? "danger" : "default"} />
         <Stat label="Время в Москве" value={moscowNow || status?.moscowNow || "-"} />
         <Stat label="Отправлено сегодня" value={`${status?.todaySent ?? 0} / ${settings?.daily_limit ?? 0}`} />
         <Stat label="Очередь / отправлено / ошибки" value={`${status?.queued ?? 0} / ${status?.sent ?? 0} / ${status?.errors ?? 0}`} />
@@ -376,18 +376,21 @@ export function OutreachDashboard() {
         <form onSubmit={saveSettings} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Настройки</h2>
-            <button
-              className={
-                isUnlimited
-                  ? "h-10 rounded border border-red-700 bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700"
-                  : "h-10 rounded border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
-              }
-              type="button"
-              aria-pressed={isUnlimited}
-              onClick={toggleUnlimitedMode}
-            >
-              Без лимитов
-            </button>
+            <div className="grid justify-items-end gap-1">
+              <button
+                className={
+                  isUnlimited
+                    ? "h-10 rounded border border-red-700 bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700"
+                    : "h-10 rounded border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+                }
+                type="button"
+                aria-pressed={isUnlimited}
+                onClick={toggleUnlimitedMode}
+              >
+                Тест
+              </button>
+              <p className="text-xs text-rose-700">Отправка писем начнётся сразу.</p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-3">
             {weekdays.map((day) => (

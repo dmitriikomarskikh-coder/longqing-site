@@ -164,7 +164,7 @@ async function main() {
   console.log("LONGQING outreach worker started. No browser loop is used.");
   while (true) {
     await tick();
-    await new Promise((resolve) => setTimeout(resolve, 60_000));
+    await new Promise((resolve) => setTimeout(resolve, getSettings().unlimited_mode ? 5_000 : 60_000));
   }
 }
 
