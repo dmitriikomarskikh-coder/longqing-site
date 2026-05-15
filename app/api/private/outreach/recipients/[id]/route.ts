@@ -1,5 +1,5 @@
 import {guardPrivateApi, privateHeaders} from "@/lib/private/api";
-import {updateRecipient} from "@/lib/outreach/db";
+import {deleteSentRecipient, updateRecipient} from "@/lib/outreach/db";
 import {isValidOutreachEmail} from "@/lib/outreach/template";
 
 export async function PATCH(request: Request, {params}: {params: Promise<{id: string}>}) {
@@ -26,6 +26,24 @@ export async function PATCH(request: Request, {params}: {params: Promise<{id: st
     return Response.json(updateRecipient(recipientId, {company, email}), {headers: privateHeaders()});
   } catch (error) {
     const code = error instanceof Error ? error.message : "recipient_update_failed";
+    return Response.json({error: code}, {status: 400, headers: privateHeaders()});
+  }
+}
+
+export async function DELETE(_: Request, {params}: {params: Promise<{id: string}>}) {
+  const guard = await guardPrivateApi();
+  if (guard) return guard;
+
+  const {id} = await params;
+  const recipientId = Number(id);
+  if (!Number.isFinite(recipientId) || recipientId < 1) {
+    return Response.json({error: "recipient_not_found"}, {status: 404, headers: privateHeaders()});
+  }
+
+  try {
+    return Response.json(deleteSentRecipient(recipientId), {headers: privateHeaders()});
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "recipient_delete_failed";
     return Response.json({error: code}, {status: 400, headers: privateHeaders()});
   }
 }

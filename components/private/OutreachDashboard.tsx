@@ -221,6 +221,18 @@ export function OutreachDashboard() {
     }
   }
 
+  async function deleteSentRecipient(row: Recipient) {
+    if (!window.confirm(`Удалить запись об отправке ${row.email}? Это действие только для очистки тестовой истории.`)) {
+      return;
+    }
+    const response = await fetch(`/api/private/outreach/recipients/${row.id}`, {method: "DELETE"});
+    const body = await parseJsonResponse(response);
+    setMessage(response.ok ? "Запись удалена из отправленных" : translateError(body.error));
+    if (response.ok) {
+      await refresh();
+    }
+  }
+
   const previewRecipients = [...queue, ...sent, ...errors];
   const previewRecipient =
     previewRecipients.find((recipient) => String(recipient.id) === previewRecipientId) ??
@@ -408,7 +420,7 @@ export function OutreachDashboard() {
         onCancelEdit={() => setEditingId(null)}
         onExclude={excludeRecipient}
       />
-      <Table title="Отправлено" rows={sent} />
+      <Table title="Отправлено" rows={sent} removable onRemove={deleteSentRecipient} />
       <Table
         title="Ошибки"
         rows={errors}
@@ -542,7 +554,9 @@ function Table({
   onEditDraftChange,
   onSaveEdit,
   onCancelEdit,
-  onExclude
+  onExclude,
+  removable = false,
+  onRemove
 }: {
   title: string;
   rows: Recipient[];
@@ -554,6 +568,8 @@ function Table({
   onSaveEdit?: (row: Recipient) => void;
   onCancelEdit?: () => void;
   onExclude?: (row: Recipient) => void;
+  removable?: boolean;
+  onRemove?: (row: Recipient) => void;
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -568,7 +584,7 @@ function Table({
               <th className="p-3">Совпадение</th>
               <th className="p-3">Обновлено</th>
               <th className="p-3">Ошибка</th>
-              {editable ? <th className="p-3">Действия</th> : null}
+              {editable || removable ? <th className="p-3">Действия</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -604,7 +620,7 @@ function Table({
                 </td>
                 <td className="p-3">{row.updated_at}</td>
                 <td className="p-3">{row.last_error ?? ""}</td>
-                {editable ? (
+                {editable || removable ? (
                   <td className="p-3">
                     {editingId === row.id ? (
                       <div className="flex flex-wrap gap-2">
@@ -615,7 +631,7 @@ function Table({
                           Отмена
                         </button>
                       </div>
-                    ) : (
+                    ) : editable ? (
                       <div className="flex flex-wrap gap-2">
                         <button className="rounded border border-slate-300 px-3 py-1.5 text-xs" type="button" onClick={() => onStartEdit?.(row)}>
                           Редактировать
@@ -624,6 +640,10 @@ function Table({
                           Исключить
                         </button>
                       </div>
+                    ) : (
+                      <button className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700" type="button" onClick={() => onRemove?.(row)}>
+                        Удалить
+                      </button>
                     )}
                   </td>
                 ) : null}
@@ -702,6 +722,7 @@ function translateEventType(type: string) {
     import: "Импорт",
     recipient_created: "Получатель добавлен",
     recipient_reused: "Получатель возвращён в очередь",
+    recipient_deleted: "Запись удалена",
     auto_paused_queue_empty: "Автопауза: очередь закончилась",
     send_success: "Письмо отправлено",
     send_error: "Ошибка отправки",
@@ -744,6 +765,8 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     recipient_fields_required: "Укажите компанию и e-mail",
     recipient_update_failed: "Не удалось обновить получателя",
     recipient_not_found: "Получатель не найден",
+    recipient_delete_failed: "Не удалось удалить запись",
+    recipient_delete_sent_only: "Удалять вручную можно только записи из отправленных",
     outreach_send_disabled: "Отправка выключена в server env",
     smtp_or_imap_env_missing: "Не настроены SMTP/IMAP переменные на сервере",
     copy_not_approved: "Сначала подтвердите согласование текста письма",

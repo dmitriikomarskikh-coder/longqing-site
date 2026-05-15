@@ -314,6 +314,20 @@ export function updateRecipient(id: number, input: {company: string; email: stri
   return {ok: true};
 }
 
+export function deleteSentRecipient(id: number) {
+  const database = getOutreachDb();
+  const row = database.prepare("select status from outreach_recipients where id = ?").get(id) as {status: OutreachRecipientStatus} | undefined;
+  if (!row) {
+    throw new Error("recipient_not_found");
+  }
+  if (row.status !== "sent") {
+    throw new Error("recipient_delete_sent_only");
+  }
+  database.prepare("delete from outreach_recipients where id = ?").run(id);
+  addEvent("recipient_deleted", id, null, {status: "sent"});
+  return {ok: true};
+}
+
 export function createRecipient(input: {company: string; email: string}) {
   const company = input.company.trim();
   const email = input.email.trim().toLowerCase();

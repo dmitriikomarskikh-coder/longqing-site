@@ -33,12 +33,12 @@ export const outreachFirstParagraphs = [
 ];
 
 export const outreachStockRows = [
-  ["EX00008371", "Поршень / Piston", "16"],
-  ["5240114210", "Гильза цилиндра / Cylinder liner", "32"],
-  ["5550110259", "Уплотнения гильзы", "64"],
-  ["EXT0110100193", "Турбокомпрессор 12V", "4"],
-  ["EXT0210100167", "Турбокомпрессор 16V", "4"],
-  ["EX52811400063", "Охладитель наддувочного воздуха", "1"]
+  ["EX00008371", "Piston", "Поршень", "16"],
+  ["5240114210", "Cylinder liner", "Гильза цилиндра", "32"],
+  ["5550110259", "Cylinder liner seals", "Уплотнения гильзы", "64"],
+  ["EXT0110100193", "Turbocharger 12V", "Турбокомпрессор 12V", "4"],
+  ["EXT0210100167", "Turbocharger 16V", "Турбокомпрессор 16V", "4"],
+  ["EX52811400063", "Charge air cooler", "Охладитель наддувочного воздуха", "1"]
 ];
 
 export const defaultOutreachTemplate: OutreachStoredTemplate = {
@@ -57,7 +57,6 @@ export const defaultOutreachTemplate: OutreachStoredTemplate = {
     "В наличии есть позиции для ремонта и обслуживания двигателей / силовых установок MTU: поршни, гильзы, вкладыши, уплотнения, элементы охлаждения, турбокомпрессоры, трубки высокого давления и другие детали.",
     "",
     "Список позиций:",
-    "",
     "{{СписокПозиции}}",
     "",
     "Если какие-то позиции актуальны, пришлите нужные номера деталей и количество — подготовим предложение по цене, срокам и варианту поставки.",
@@ -67,50 +66,48 @@ export const defaultOutreachTemplate: OutreachStoredTemplate = {
     "+7 961 866 17 00",
     "LONGQING TRADE",
     "office@longqingtrade.com",
-    "https://longqingtrade.com",
-    "",
-    "Если вопрос неактуален, напишите, пожалуйста, «неактуально» — больше не будем обращаться по этой теме."
+    "https://longqingtrade.com"
   ].join("\n")
 };
 
 const defaultTemplateStockRows = [
-  ["EX00008371", "Поршень / Piston", "16"],
-  ["5240114210", "Гильза цилиндра / Cylinder liner", "32"],
-  ["5550110259", "Уплотнения гильзы", "64"],
-  ["5240384110", "Вкладыш шатунный верх 0-0", "16"],
-  ["X00043218", "Вкладыш шатунный низ 0-0", "16"],
-  ["5240384210", "Вкладыш шатунный верх 0-1", "8"],
-  ["X00043219", "Вкладыш шатунный низ 0-1", "8"],
-  ["X59320300052", "Термостаты ГК", "16"],
-  ["5242030075", "Термостаты ХК", "8"],
-  ["EX52620200193", "Насос ОЖ ГК", "1"],
-  ["EX54720300141", "Насос ОЖ ХК", "1"],
-  ["EXT0110100193", "Турбокомпрессор 12V", "4"],
-  ["EXT0210100167", "Турбокомпрессор 16V", "4"],
-  ["X52636200030", "Компрессор воздушный", "2"],
-  ["23540850", "Блок управления ТНВД", "4"],
-  ["E0000352500/87", "Гаситель", "1"],
-  ["5240980281", "Рукав ТКР", "12"],
-  ["XP52799100608", "Хомут рукава ТКР", "24"],
-  ["23540449", "Трубка высокого давления А", "1"],
-  ["23540110", "Трубка высокого давления Б", "1"],
-  ["5240160321", "Прокладки клапанной крышки", "100"],
-  ["700429085002", "Кольцо уплотнительное", "40"],
-  ["700429058002", "Кольца водянные на переливы", "20"],
-  ["5240111380", "Прокладки боковых лючков", "15"],
-  ["X52404200052", "Кольцо газового стыка", "32"],
-  ["5240110159", "Кольцо нагаросьемное", "32"],
-  ["0001800015", "Клапан редукционный", "3"],
-  ["700429180000", "Кольцо уплотнительное на гаситель", "15"],
-  ["X00017505", "Топливный фильтр блока управления", "10"],
-  ["5249970245", "Кольца уплотнительные маслянных охладителей", "48"],
-  ["5240320705", "Колесо зубчатое", "2"],
-  ["EX52811400063", "Охладитель наддувочного воздуха", "1"],
-  ["5241801819", "Тубка маслоподачи ТКР", "8"],
-  ["X52404200037", "Проклдака", "50"],
-  ["X52414100132", "Прокладка выхлопная", "50"],
-  ["0002034480", "Манжета термостата", "22"],
-  ["5245400097", "Клапан включения гидромуфты", "2"]
+  ["EX00008371", "Piston", "Поршень", "16"],
+  ["5240114210", "Cylinder liner", "Гильза цилиндра", "32"],
+  ["5550110259", "Cylinder liner seals", "Уплотнения гильзы", "64"],
+  ["5240384110", "Upper connecting rod bearing 0-0", "Вкладыш шатунный верх 0-0", "16"],
+  ["X00043218", "Lower connecting rod bearing 0-0", "Вкладыш шатунный низ 0-0", "16"],
+  ["5240384210", "Upper connecting rod bearing 0-1", "Вкладыш шатунный верх 0-1", "8"],
+  ["X00043219", "Lower connecting rod bearing 0-1", "Вкладыш шатунный низ 0-1", "8"],
+  ["X59320300052", "HT circuit thermostats", "Термостаты ГК", "16"],
+  ["5242030075", "LT circuit thermostats", "Термостаты ХК", "8"],
+  ["EX52620200193", "HT coolant pump", "Насос ОЖ ГК", "1"],
+  ["EX54720300141", "LT coolant pump", "Насос ОЖ ХК", "1"],
+  ["EXT0110100193", "Turbocharger 12V", "Турбокомпрессор 12V", "4"],
+  ["EXT0210100167", "Turbocharger 16V", "Турбокомпрессор 16V", "4"],
+  ["X52636200030", "Air compressor", "Компрессор воздушный", "2"],
+  ["23540850", "Fuel pump control unit", "Блок управления ТНВД", "4"],
+  ["E0000352500/87", "Damper", "Гаситель", "1"],
+  ["5240980281", "Turbocharger hose", "Рукав ТКР", "12"],
+  ["XP52799100608", "Turbocharger hose clamp", "Хомут рукава ТКР", "24"],
+  ["23540449", "High pressure pipe A", "Трубка высокого давления А", "1"],
+  ["23540110", "High pressure pipe B", "Трубка высокого давления Б", "1"],
+  ["5240160321", "Valve cover gasket", "Прокладки клапанной крышки", "100"],
+  ["700429085002", "Sealing ring", "Кольцо уплотнительное", "40"],
+  ["700429058002", "Water transfer sealing rings", "Кольца водяные на переливы", "20"],
+  ["5240111380", "Side cover gaskets", "Прокладки боковых лючков", "15"],
+  ["X52404200052", "Gas joint ring", "Кольцо газового стыка", "32"],
+  ["5240110159", "Carbon scraper ring", "Кольцо нагаросъёмное", "32"],
+  ["0001800015", "Pressure reducing valve", "Клапан редукционный", "3"],
+  ["700429180000", "Damper sealing ring", "Кольцо уплотнительное на гаситель", "15"],
+  ["X00017505", "Control unit fuel filter", "Топливный фильтр блока управления", "10"],
+  ["5249970245", "Oil cooler sealing rings", "Кольца уплотнительные масляных охладителей", "48"],
+  ["5240320705", "Gear wheel", "Колесо зубчатое", "2"],
+  ["EX52811400063", "Charge air cooler", "Охладитель наддувочного воздуха", "1"],
+  ["5241801819", "Turbocharger oil supply pipe", "Трубка маслоподачи ТКР", "8"],
+  ["X52404200037", "Gasket", "Прокладка", "50"],
+  ["X52414100132", "Exhaust gasket", "Прокладка выхлопная", "50"],
+  ["0002034480", "Thermostat collar", "Манжета термостата", "22"],
+  ["5245400097", "Hydraulic coupling activation valve", "Клапан включения гидромуфты", "2"]
 ];
 
 export const forbiddenOutreachPhrases = [
@@ -148,7 +145,7 @@ function companyValue(recipient: OutreachTemplateRecipient) {
 
 function defaultStockTableText() {
   return [
-    "Part number | Наименование | Кол-во",
+    "Номер | Name | Наименование | Кол-во",
     ...defaultTemplateStockRows.map((row) => row.join(" | "))
   ].join("\n");
 }
@@ -156,10 +153,10 @@ function defaultStockTableText() {
 function defaultStockTableHtml() {
   return [
     '<table border="1" cellpadding="6" cellspacing="0">',
-    "<tr><th>Part number</th><th>Наименование</th><th>Кол-во</th></tr>",
+    "<tr><th>Номер</th><th>Name</th><th>Наименование</th><th>Кол-во</th></tr>",
     ...defaultTemplateStockRows.map(
-      ([partNumber, name, quantity]) =>
-        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(name)}</td><td>${escapeHtml(quantity)}</td></tr>`
+      ([partNumber, nameEn, nameRu, quantity]) =>
+        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(nameEn)}</td><td>${escapeHtml(nameRu)}</td><td>${escapeHtml(quantity)}</td></tr>`
     ),
     "</table>"
   ].join("\n");
@@ -222,7 +219,7 @@ export function renderOutreachEmail(
   const paragraphIndex = seed % outreachFirstParagraphs.length;
   const helloLine = recipient.contact_name ? `Здравствуйте, ${recipient.contact_name}.` : "Здравствуйте.";
   const stockTableText = [
-    "Part number | Наименование | Кол-во",
+    "Номер | Name | Наименование | Кол-во",
     ...outreachStockRows.map((row) => row.join(" | "))
   ].join("\n");
   const text = [
@@ -247,9 +244,7 @@ export function renderOutreachEmail(
     "LONGQING TRADE",
     "office@longqingtrade.com",
     "+7 905 074 97 77",
-    "https://longqingtrade.com",
-    "",
-    "Если вопрос неактуален, напишите, пожалуйста, «неактуально» — больше не будем обращаться по этой теме."
+    "https://longqingtrade.com"
   ].join("\n");
 
   const html = [
@@ -265,15 +260,14 @@ export function renderOutreachEmail(
     "</ul>",
     "<p>Ключевые позиции по наличию:</p>",
     '<table border="1" cellpadding="6" cellspacing="0">',
-    "<tr><th>Part number</th><th>Наименование</th><th>Кол-во</th></tr>",
+    "<tr><th>Номер</th><th>Name</th><th>Наименование</th><th>Кол-во</th></tr>",
     ...outreachStockRows.map(
-      ([partNumber, name, quantity]) =>
-        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(name)}</td><td>${escapeHtml(quantity)}</td></tr>`
+      ([partNumber, nameEn, nameRu, quantity]) =>
+        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(nameEn)}</td><td>${escapeHtml(nameRu)}</td><td>${escapeHtml(quantity)}</td></tr>`
     ),
     "</table>",
     "<p>Если у вас есть актуальная потребность по MTU, пришлите интересующие номера деталей — подготовим предложение.</p>",
-    '<p>С уважением,<br>LONGQING TRADE<br>office@longqingtrade.com<br>+7 905 074 97 77<br><a href="https://longqingtrade.com">https://longqingtrade.com</a></p>',
-    "<p>Если вопрос неактуален, напишите, пожалуйста, «неактуально» — больше не будем обращаться по этой теме.</p>"
+    '<p>С уважением,<br>LONGQING TRADE<br>office@longqingtrade.com<br>+7 905 074 97 77<br><a href="https://longqingtrade.com">https://longqingtrade.com</a></p>'
   ].join("\n");
 
   return {
