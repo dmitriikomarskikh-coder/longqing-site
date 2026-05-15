@@ -11,6 +11,9 @@ type Status = {
     allowed_time_end: string;
     min_delay_minutes: number;
     max_delay_minutes: number;
+    unlimited_mode: boolean;
+    saved_regular_min_delay_minutes: number | null;
+    saved_regular_max_delay_minutes: number | null;
     daily_limit: number;
     next_send_after: string | null;
   };
@@ -59,6 +62,9 @@ const defaultSettingsDraft: SettingsDraft = {
   allowed_time_end: "18:00",
   min_delay_minutes: 15,
   max_delay_minutes: 25,
+  unlimited_mode: false,
+  saved_regular_min_delay_minutes: null,
+  saved_regular_max_delay_minutes: null,
   daily_limit: 10,
   next_send_after: null
 };
@@ -132,6 +138,17 @@ export function OutreachDashboard() {
     const response = await fetch(`/api/private/outreach/control/${action}`, {method: "POST"});
     const body = await response.json();
     setMessage(response.ok ? (action === "start" ? "Рассылка включена" : "Рассылка поставлена на паузу") : translateError(body.error));
+    await refresh();
+  }
+
+  async function toggleUnlimitedMode() {
+    const response = await fetch("/api/private/outreach/control/unlimited", {method: "POST"});
+    const body = await parseJsonResponse(response);
+    setMessage(
+      response.ok
+        ? ((body as Partial<SettingsDraft>).unlimited_mode ? "Режим без лимитов включён" : "Рабочий режим: рассылка на паузе")
+        : translateError(body.error)
+    );
     await refresh();
   }
 
@@ -293,6 +310,7 @@ export function OutreachDashboard() {
   const previewSubject = renderClientTemplate(templateDraft.subject, previewRecipient);
   const previewBody = renderClientTemplate(templateDraft.body, previewRecipient);
   const isRunning = Boolean(settings?.enabled);
+  const isUnlimited = Boolean(settings?.unlimited_mode);
 
   return (
     <div className="mx-auto grid max-w-7xl gap-6">
@@ -309,7 +327,7 @@ export function OutreachDashboard() {
       {message ? <p className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p> : null}
 
       <section className="grid gap-4 md:grid-cols-4">
-        <Stat label="Статус" value={settings?.enabled ? "Запущена" : "На паузе"} />
+        <Stat label="Статус" value={isUnlimited ? "Без лимитов" : (settings?.enabled ? "Запущена" : "На паузе")} tone={isUnlimited ? "danger" : "default"} />
         <Stat label="Время в Москве" value={moscowNow || status?.moscowNow || "-"} />
         <Stat label="Отправлено сегодня" value={`${status?.todaySent ?? 0} / ${settings?.daily_limit ?? 0}`} />
         <Stat label="Очередь / отправлено / ошибки" value={`${status?.queued ?? 0} / ${status?.sent ?? 0} / ${status?.errors ?? 0}`} />
@@ -320,7 +338,7 @@ export function OutreachDashboard() {
         <div className="flex flex-wrap gap-3">
           <button
             className={
-              isRunning
+              isRunning && !isUnlimited
                 ? "h-10 rounded border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
                 : "h-10 rounded border border-slate-300 bg-white px-4 text-sm transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
             }
@@ -342,12 +360,35 @@ export function OutreachDashboard() {
           >
             Пауза
           </button>
+          {isUnlimited ? (
+            <button
+              className="h-10 rounded border border-slate-300 bg-white px-4 text-sm transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
+              type="button"
+              onClick={toggleUnlimitedMode}
+            >
+              Перейти в рабочий режим
+            </button>
+          ) : null}
         </div>
       </section>
 
       {settings ? (
         <form onSubmit={saveSettings} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xl font-semibold">Настройки</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold">Настройки</h2>
+            <button
+              className={
+                isUnlimited
+                  ? "h-10 rounded border border-red-700 bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700"
+                  : "h-10 rounded border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+              }
+              type="button"
+              aria-pressed={isUnlimited}
+              onClick={toggleUnlimitedMode}
+            >
+              Без лимитов
+            </button>
+          </div>
           <div className="flex flex-wrap gap-3">
             {weekdays.map((day) => (
               <label key={day.value} className="flex items-center gap-2 text-sm">
@@ -548,11 +589,11 @@ export function OutreachDashboard() {
   );
 }
 
-function Stat({label, value}: {label: string; value: string}) {
+function Stat({label, value, tone = "default"}: {label: string; value: string; tone?: "default" | "danger"}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{label}</p>
-      <p className="mt-2 text-xl font-semibold text-slate-950">{value}</p>
+    <div className={tone === "danger" ? "rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"}>
+      <p className={tone === "danger" ? "text-xs uppercase tracking-[0.12em] text-rose-500" : "text-xs uppercase tracking-[0.12em] text-slate-500"}>{label}</p>
+      <p className={tone === "danger" ? "mt-2 text-xl font-semibold text-rose-800" : "mt-2 text-xl font-semibold text-slate-950"}>{value}</p>
     </div>
   );
 }
@@ -652,8 +693,9 @@ function formatSendCapacity(settings: SettingsDraft) {
     return "Количество писем для отправки в указанное время: проверьте начало и окончание окна по Москве.";
   }
   const windowMinutes = end - start;
-  const minimum = sendCountForWindow(windowMinutes, maxDelay);
-  const maximum = sendCountForWindow(windowMinutes, minDelay);
+  const dailyLimit = Math.max(1, Number(settings.daily_limit) || 1);
+  const minimum = Math.min(dailyLimit, sendCountForWindow(windowMinutes, maxDelay));
+  const maximum = Math.min(dailyLimit, sendCountForWindow(windowMinutes, minDelay));
   const average = Math.round((minimum + maximum) / 2);
   return `Количество писем для отправки в указанное время по Москве: от ${minimum} до ${maximum} в сутки. Среднее значение: ${average}.`;
 }

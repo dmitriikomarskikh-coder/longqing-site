@@ -24,6 +24,9 @@ export type OutreachSettings = {
   allowed_time_end: string;
   min_delay_minutes: number;
   max_delay_minutes: number;
+  unlimited_mode: boolean;
+  saved_regular_min_delay_minutes: number | null;
+  saved_regular_max_delay_minutes: number | null;
   daily_limit: number;
   next_send_after: string | null;
   require_sent_append: boolean;
@@ -59,6 +62,9 @@ export const defaultOutreachSettings: OutreachSettings = {
   allowed_time_end: "18:00",
   min_delay_minutes: 15,
   max_delay_minutes: 25,
+  unlimited_mode: false,
+  saved_regular_min_delay_minutes: null,
+  saved_regular_max_delay_minutes: null,
   daily_limit: 10,
   next_send_after: null,
   require_sent_append: true,
@@ -277,6 +283,42 @@ export function saveSettings(input: Partial<OutreachSettings>) {
   }
   addEvent("settings_changed", null, null, {changed: Object.keys(cleanInput)});
   return next;
+}
+
+export function enterUnlimitedMode() {
+  const current = getSettings();
+  return saveSettings({
+    enabled: true,
+    unlimited_mode: true,
+    min_delay_minutes: 3,
+    max_delay_minutes: 5,
+    next_send_after: null,
+    saved_regular_min_delay_minutes: current.unlimited_mode
+      ? current.saved_regular_min_delay_minutes
+      : current.min_delay_minutes,
+    saved_regular_max_delay_minutes: current.unlimited_mode
+      ? current.saved_regular_max_delay_minutes
+      : current.max_delay_minutes
+  });
+}
+
+export function exitUnlimitedMode() {
+  const current = getSettings();
+  const restoredMin =
+    current.saved_regular_min_delay_minutes ??
+    (current.min_delay_minutes === 3 && current.max_delay_minutes === 5 ? defaultOutreachSettings.min_delay_minutes : current.min_delay_minutes);
+  const restoredMax =
+    current.saved_regular_max_delay_minutes ??
+    (current.min_delay_minutes === 3 && current.max_delay_minutes === 5 ? defaultOutreachSettings.max_delay_minutes : current.max_delay_minutes);
+  return saveSettings({
+    enabled: false,
+    unlimited_mode: false,
+    min_delay_minutes: restoredMin,
+    max_delay_minutes: Math.max(restoredMin, restoredMax),
+    next_send_after: null,
+    saved_regular_min_delay_minutes: null,
+    saved_regular_max_delay_minutes: null
+  });
 }
 
 export function getOutreachTemplate(): OutreachStoredTemplate {

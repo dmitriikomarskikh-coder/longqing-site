@@ -1,7 +1,7 @@
 import process from "node:process";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
-import {getOutreachDb, getSettings, saveSettings, addEvent, getOutreachTemplate, type RecipientRow} from "../lib/outreach/db";
+import {getOutreachDb, getSettings, saveSettings, addEvent, getOutreachTemplate, exitUnlimitedMode, type RecipientRow} from "../lib/outreach/db";
 import {renderOutreachEmail} from "../lib/outreach/template";
 import {loadOutreachEnv, outreachEnv} from "../lib/outreach/runtime-env";
 
@@ -120,16 +120,20 @@ async function tick() {
   const settings = getSettings();
   if (!settings.enabled) return;
   if (!settings.require_sent_append || env("OUTREACH_REQUIRE_SENT_APPEND") !== "true") return;
-  if (!isInsideSchedule()) return;
+  if (!settings.unlimited_mode && !isInsideSchedule()) return;
   if (settings.next_send_after && new Date(settings.next_send_after).getTime() > Date.now()) return;
-  if (todaySentCount() >= settings.daily_limit) return;
+  if (!settings.unlimited_mode && todaySentCount() >= settings.daily_limit) return;
 
   const database = getOutreachDb();
   const recipient = database
     .prepare("select * from outreach_recipients where status = 'queued' order by queue_position is null, queue_position asc, created_at asc, id asc limit 1")
     .get() as RecipientRow | undefined;
   if (!recipient) {
-    saveSettings({enabled: false, next_send_after: null});
+    if (settings.unlimited_mode) {
+      exitUnlimitedMode();
+    } else {
+      saveSettings({enabled: false, next_send_after: null});
+    }
     addEvent("auto_paused_queue_empty", null, null, {});
     return;
   }
@@ -147,7 +151,11 @@ async function tick() {
     database
       .prepare("update outreach_recipients set status='error', queue_position=null, last_error=?, updated_at=? where id=?")
       .run(message, new Date().toISOString(), recipient.id);
-    saveSettings({enabled: false});
+    if (settings.unlimited_mode) {
+      exitUnlimitedMode();
+    } else {
+      saveSettings({enabled: false});
+    }
     addEvent("send_error", recipient.id, null, {error: message});
   }
 }
