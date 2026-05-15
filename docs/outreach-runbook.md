@@ -101,7 +101,7 @@ Run:
 npm run outreach:batch-send
 ```
 
-The default delay is 90–180 seconds between messages. Do not send more than 10 in the first batch.
+The production dashboard should normally use a 15–25 minute randomized delay between messages. The hard minimum is 3 minutes, but it is only a technical floor, not the recommended operating cadence. Do not send more than 10 recipients in the first real batch.
 
 For `batch-send`, `OUTREACH_REQUIRE_SENT_APPEND=true` is mandatory. Before the first SMTP send, the CLI connects to IMAP, finds Sent / “Отправленные”, and stops if the folder is not available. If SMTP succeeds but append to Sent fails for any message, the CLI records `sent_append_status=failed...`, marks the recipient with an error, and stops the batch.
 

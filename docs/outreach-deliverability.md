@@ -4,7 +4,7 @@
 - Do not send mass `To`, `Cc`, or multi-recipient messages.
 - Keep `OUTREACH_BCC_ARCHIVE` empty by default. Use Bcc only if it is explicitly set for a specific controlled test.
 - For real sending, archive sent messages through IMAP Sent append. Batch sending requires `OUTREACH_REQUIRE_SENT_APPEND=true`.
-- Keep 90–180 seconds between real batch messages.
+- Use a 15–25 minute randomized delay between real messages by default. The technical hard minimum is 3 minutes, but it should not be used for real cold outreach except controlled tests.
 - Start with 10 recipients in the first batch.
 - Then move to 20–30 recipients per day only after checking replies, bounces, and spam placement.
 - Do not scale to 300 recipients until early results are stable.

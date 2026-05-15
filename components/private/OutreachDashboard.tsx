@@ -58,7 +58,7 @@ const defaultSettingsDraft: SettingsDraft = {
   allowed_days: [1, 2, 3, 4, 5],
   allowed_time_start: "10:00",
   allowed_time_end: "18:00",
-  min_delay_minutes: 8,
+  min_delay_minutes: 15,
   max_delay_minutes: 25,
   daily_limit: 10,
   next_send_after: null
