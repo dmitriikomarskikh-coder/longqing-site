@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import {getOutreachDb, emailHash, addEvent} from "@/lib/outreach/db";
+import {getOutreachDb, emailHash, addEvent, matchSentHistory} from "@/lib/outreach/db";
 import {isValidOutreachEmail} from "@/lib/outreach/template";
 
 type ParsedRow = {
@@ -108,14 +108,18 @@ export async function importRecipientsFile(file: File) {
   let skippedDuplicates = 0;
   let skippedInvalid = 0;
 
-  const existing = new Set(
-    (database.prepare("select email_hash from outreach_recipients").all() as Array<{email_hash: string}>).map(
-      (row) => row.email_hash
-    )
+  const existingUnsent = new Set(
+    (
+      database
+        .prepare("select email_hash from outreach_recipients where status != 'sent'")
+        .all() as Array<{email_hash: string}>
+    ).map((row) => row.email_hash)
   );
   const insert = database.prepare(
-    "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, source_upload_id) values (?, ?, ?, 'queued', ?, ?, ?)"
+    "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, source_upload_id, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?, ?)"
   );
+  const seenInUpload = new Set<string>();
+  let historyMatches = 0;
 
   for (const row of rows) {
     if (!row.company || !isValidOutreachEmail(row.email)) {
@@ -123,12 +127,16 @@ export async function importRecipientsFile(file: File) {
       continue;
     }
     const hash = emailHash(row.email);
-    if (existing.has(hash)) {
+    if (seenInUpload.has(hash) || existingUnsent.has(hash)) {
       skippedDuplicates += 1;
       continue;
     }
-    insert.run(row.company, row.email, hash, now, now, uploadId);
-    existing.add(hash);
+    const match = matchSentHistory(row.company, row.email);
+    if (match.type !== "none") {
+      historyMatches += 1;
+    }
+    insert.run(row.company, row.email, hash, now, now, uploadId, match.type, match.detail);
+    seenInUpload.add(hash);
     imported += 1;
   }
 
@@ -136,13 +144,14 @@ export async function importRecipientsFile(file: File) {
   database
     .prepare("update outreach_uploads set rows_imported = ?, rows_skipped = ? where id = ?")
     .run(imported, skipped, uploadId);
-  addEvent("upload", null, null, {upload_id: uploadId, rows_total: rows.length, imported, skipped});
+  addEvent("upload", null, null, {upload_id: uploadId, rows_total: rows.length, imported, skipped, history_matches: historyMatches});
 
   return {
     upload_id: uploadId,
     rows_total: rows.length,
     imported,
     skipped_duplicates: skippedDuplicates,
-    skipped_invalid: skippedInvalid
+    skipped_invalid: skippedInvalid,
+    history_matches: historyMatches
   };
 }

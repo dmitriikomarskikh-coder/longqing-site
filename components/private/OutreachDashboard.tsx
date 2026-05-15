@@ -30,6 +30,8 @@ type Recipient = {
   updated_at: string;
   last_sent_at: string | null;
   last_error: string | null;
+  history_match_type: "none" | "full" | "email" | "company";
+  history_match_detail: string | null;
 };
 
 type EventRow = {
@@ -41,13 +43,23 @@ type EventRow = {
   detail_json: string;
 };
 
+type TemplateState = {
+  subject: string;
+  body: string;
+  preview: {subject: string; text: string; html: string};
+};
+
 export function OutreachDashboard() {
   const [status, setStatus] = useState<Status | null>(null);
   const [queue, setQueue] = useState<Recipient[]>([]);
   const [sent, setSent] = useState<Recipient[]>([]);
   const [errors, setErrors] = useState<Recipient[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
-  const [template, setTemplate] = useState<{subjects: string[]; preview: {text: string; html: string}} | null>(null);
+  const [template, setTemplate] = useState<TemplateState | null>(null);
+  const [templateDraft, setTemplateDraft] = useState({subject: "", body: ""});
+  const [previewRecipientId, setPreviewRecipientId] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState({company: "", email: ""});
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState("");
 
@@ -69,6 +81,7 @@ export function OutreachDashboard() {
     setErrors(nextErrors.recipients ?? []);
     setEvents(nextEvents.events ?? []);
     setTemplate(nextTemplate);
+    setTemplateDraft({subject: nextTemplate.subject ?? "", body: nextTemplate.body ?? ""});
   }
 
   useEffect(() => {
@@ -120,6 +133,58 @@ export function OutreachDashboard() {
     setMessage(response.ok ? "Настройки сохранены" : translateError(body.error));
     await refresh();
   }
+
+  async function saveTemplate() {
+    const response = await fetch("/api/private/outreach/template", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(templateDraft)
+    });
+    const body = await parseJsonResponse(response);
+    setMessage(response.ok ? "Шаблон письма сохранён" : translateError(body.error, body));
+    if (response.ok) {
+      setTemplate(body as TemplateState);
+      await refresh();
+    }
+  }
+
+  function startEdit(row: Recipient) {
+    setEditingId(row.id);
+    setEditDraft({company: row.company, email: row.email});
+  }
+
+  async function saveRecipient(row: Recipient) {
+    const response = await fetch(`/api/private/outreach/recipients/${row.id}`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(editDraft)
+    });
+    const body = await parseJsonResponse(response);
+    setMessage(response.ok ? "Получатель обновлён" : translateError(body.error));
+    if (response.ok) {
+      setEditingId(null);
+      await refresh();
+    }
+  }
+
+  async function excludeRecipient(row: Recipient) {
+    if (!window.confirm(`Исключить получателя ${row.email} из очереди?`)) {
+      return;
+    }
+    const response = await fetch(`/api/private/outreach/recipients/${row.id}/do-not-contact`, {method: "POST"});
+    const body = await parseJsonResponse(response);
+    setMessage(response.ok ? "Получатель исключён из очереди" : translateError(body.error));
+    if (response.ok) {
+      await refresh();
+    }
+  }
+
+  const previewRecipients = [...queue, ...sent, ...errors];
+  const previewRecipient =
+    previewRecipients.find((recipient) => String(recipient.id) === previewRecipientId) ??
+    previewRecipients[0] ?? {company: "Тестовая компания", email: "example@example.ru"};
+  const previewSubject = renderClientTemplate(templateDraft.subject, previewRecipient);
+  const previewBody = renderClientTemplate(templateDraft.body, previewRecipient);
 
   return (
     <div className="mx-auto grid max-w-7xl gap-6">
@@ -198,16 +263,81 @@ export function OutreachDashboard() {
         {uploadSummary ? <UploadSummary summary={uploadSummary} /> : null}
       </form>
 
-      <Table title="Очередь" rows={queue} />
+      <Table
+        title="Очередь"
+        rows={queue}
+        editable
+        editingId={editingId}
+        editDraft={editDraft}
+        onStartEdit={startEdit}
+        onEditDraftChange={setEditDraft}
+        onSaveEdit={saveRecipient}
+        onCancelEdit={() => setEditingId(null)}
+        onExclude={excludeRecipient}
+      />
       <Table title="Отправлено" rows={sent} />
-      <Table title="Ошибки" rows={errors} />
+      <Table
+        title="Ошибки"
+        rows={errors}
+        editable
+        editingId={editingId}
+        editDraft={editDraft}
+        onStartEdit={startEdit}
+        onEditDraftChange={setEditDraft}
+        onSaveEdit={saveRecipient}
+        onCancelEdit={() => setEditingId(null)}
+        onExclude={excludeRecipient}
+      />
 
       <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-xl font-semibold">Шаблон письма</h2>
-        <ul className="list-disc pl-5 text-sm text-slate-600">
-          {template?.subjects.map((subject) => <li key={subject}>{subject}</li>)}
-        </ul>
-        <pre className="max-h-80 overflow-auto rounded bg-slate-50 p-4 text-xs">{template?.preview.text}</pre>
+        <p className="text-sm text-slate-600">
+          Доступные переменные: <code>{"{{Компания}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{СписокПозиции}}"}</code>.
+          Предпросмотр ниже обновляется по текущему тексту.
+        </p>
+        <label className="grid gap-1 text-sm text-slate-600">
+          Тема письма
+          <input
+            className="h-10 rounded border border-slate-200 px-3 text-slate-950"
+            value={templateDraft.subject}
+            onChange={(event) => setTemplateDraft((current) => ({...current, subject: event.target.value}))}
+          />
+        </label>
+        <label className="grid gap-1 text-sm text-slate-600">
+          Текст письма
+          <textarea
+            className="min-h-80 rounded border border-slate-200 p-3 font-mono text-sm text-slate-950"
+            value={templateDraft.body}
+            onChange={(event) => setTemplateDraft((current) => ({...current, body: event.target.value}))}
+          />
+        </label>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="grid min-w-72 gap-1 text-sm text-slate-600">
+            Получатель для предпросмотра
+            <select
+              className="h-10 rounded border border-slate-200 px-3 text-slate-950"
+              value={previewRecipientId}
+              onChange={(event) => setPreviewRecipientId(event.target.value)}
+            >
+              <option value="">Тестовая компания</option>
+              {previewRecipients.map((recipient) => (
+                <option key={recipient.id} value={recipient.id}>
+                  {recipient.company} — {recipient.email}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="btn-primary h-10 px-4 text-sm" type="button" onClick={saveTemplate}>
+            Сохранить шаблон
+          </button>
+        </div>
+        <div className="grid gap-2 rounded bg-slate-50 p-4 text-sm">
+          <p className="font-semibold text-slate-950">Тема: {previewSubject}</p>
+          <pre className="max-h-96 overflow-auto whitespace-pre-wrap text-xs text-slate-700">{previewBody}</pre>
+        </div>
+        {template?.preview ? (
+          <p className="text-xs text-slate-500">Сохранённый серверный предпросмотр: {template.preview.subject}</p>
+        ) : null}
       </section>
 
       <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -240,7 +370,29 @@ function Input({name, label, defaultValue}: {name: string; label: string; defaul
   );
 }
 
-function Table({title, rows}: {title: string; rows: Recipient[]}) {
+function Table({
+  title,
+  rows,
+  editable = false,
+  editingId = null,
+  editDraft = {company: "", email: ""},
+  onStartEdit,
+  onEditDraftChange,
+  onSaveEdit,
+  onCancelEdit,
+  onExclude
+}: {
+  title: string;
+  rows: Recipient[];
+  editable?: boolean;
+  editingId?: number | null;
+  editDraft?: {company: string; email: string};
+  onStartEdit?: (row: Recipient) => void;
+  onEditDraftChange?: (draft: {company: string; email: string}) => void;
+  onSaveEdit?: (row: Recipient) => void;
+  onCancelEdit?: () => void;
+  onExclude?: (row: Recipient) => void;
+}) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <h2 className="border-b border-slate-200 p-5 text-xl font-semibold">{title}</h2>
@@ -251,18 +403,68 @@ function Table({title, rows}: {title: string; rows: Recipient[]}) {
               <th className="p-3">Компания</th>
               <th className="p-3">E-mail</th>
               <th className="p-3">Статус</th>
+              <th className="p-3">Совпадение</th>
               <th className="p-3">Обновлено</th>
               <th className="p-3">Ошибка</th>
+              {editable ? <th className="p-3">Действия</th> : null}
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.id} className="border-t border-slate-100">
-                <td className="p-3">{row.company}</td>
-                <td className="p-3">{row.email}</td>
+              <tr key={row.id} className={`border-t border-slate-100 ${row.history_match_type !== "none" ? "bg-rose-50" : ""}`}>
+                <td className="p-3">
+                  {editingId === row.id ? (
+                    <input
+                      className="h-9 w-full min-w-48 rounded border border-slate-200 px-2"
+                      value={editDraft.company}
+                      onChange={(event) => onEditDraftChange?.({...editDraft, company: event.target.value})}
+                    />
+                  ) : (
+                    row.company
+                  )}
+                </td>
+                <td className="p-3">
+                  {editingId === row.id ? (
+                    <input
+                      className="h-9 w-full min-w-56 rounded border border-slate-200 px-2"
+                      value={editDraft.email}
+                      onChange={(event) => onEditDraftChange?.({...editDraft, email: event.target.value})}
+                    />
+                  ) : (
+                    row.email
+                  )}
+                </td>
                 <td className="p-3">{translateRecipientStatus(row.status)}</td>
+                <td className="p-3 text-xs text-slate-600">
+                  {row.history_match_type === "none" ? "—" : (
+                    <span title={row.history_match_detail ?? undefined}>{translateHistoryMatch(row.history_match_type)}</span>
+                  )}
+                </td>
                 <td className="p-3">{row.updated_at}</td>
                 <td className="p-3">{row.last_error ?? ""}</td>
+                {editable ? (
+                  <td className="p-3">
+                    {editingId === row.id ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button className="rounded bg-teal-600 px-3 py-1.5 text-xs font-medium text-white" type="button" onClick={() => onSaveEdit?.(row)}>
+                          Сохранить
+                        </button>
+                        <button className="rounded border border-slate-300 px-3 py-1.5 text-xs" type="button" onClick={onCancelEdit}>
+                          Отмена
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        <button className="rounded border border-slate-300 px-3 py-1.5 text-xs" type="button" onClick={() => onStartEdit?.(row)}>
+                          Редактировать
+                        </button>
+                        <button className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700" type="button" onClick={() => onExclude?.(row)}>
+                          Исключить
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -272,6 +474,16 @@ function Table({title, rows}: {title: string; rows: Recipient[]}) {
   );
 }
 
+function renderClientTemplate(value: string, recipient: {company: string; email: string}) {
+  const company = recipient.company.trim() || "коллеги";
+  return value
+    .replace(/{{\s*Компания\s*}}/gi, company)
+    .replace(/{{\s*company\s*}}/gi, company)
+    .replace(/{{\s*email\s*}}/gi, recipient.email)
+    .replace(/{{\s*СписокПозиции\s*}}/gi, "[список позиций будет подставлен при отправке]")
+    .replace(/{{\s*stockList\s*}}/gi, "[список позиций будет подставлен при отправке]");
+}
+
 function UploadSummary({summary}: {summary: Record<string, unknown>}) {
   const fields = ([
     ["Всего строк", summary.rows_total],
@@ -279,6 +491,7 @@ function UploadSummary({summary}: {summary: Record<string, unknown>}) {
     ["Пропущено", summary.skipped ?? summary.rows_skipped],
     ["Дубликаты", summary.skipped_duplicates],
     ["Некорректные email", summary.skipped_invalid],
+    ["Совпадения с историей", summary.history_matches],
     ["ID загрузки", summary.upload_id],
     ["Ошибка", typeof summary.error === "string" ? translateError(summary.error) : summary.error]
   ] as Array<[string, unknown]>).filter(([, value]) => value !== undefined && value !== null);
@@ -309,6 +522,15 @@ function translateRecipientStatus(status: string) {
   return labels[status] ?? status;
 }
 
+function translateHistoryMatch(type: string) {
+  const labels: Record<string, string> = {
+    full: "Полное",
+    email: "По email",
+    company: "По компании"
+  };
+  return labels[type] ?? "—";
+}
+
 function translateEventType(type: string) {
   const labels: Record<string, string> = {
     started: "Запущено",
@@ -333,7 +555,7 @@ async function parseJsonResponse(response: Response) {
   }
 }
 
-function translateError(error: unknown) {
+function translateError(error: unknown, context?: Record<string, unknown>) {
   if (typeof error !== "string" || !error) {
     return "Операция не выполнена";
   }
@@ -347,6 +569,13 @@ function translateError(error: unknown) {
     invalid_workbook: "Не удалось прочитать Excel-файл",
     invalid_server_response: "Сервер вернул некорректный ответ",
     upload_failed: "Не удалось загрузить файл. Проверьте формат и попробуйте ещё раз",
+    template_required: "Заполните тему и текст письма",
+    template_forbidden_phrases: `В шаблоне есть запрещённые формулировки: ${Array.isArray(context?.forbidden) ? context.forbidden.join(", ") : ""}`,
+    company_required: "Укажите компанию",
+    email_invalid: "Укажите корректный e-mail",
+    recipient_email_duplicate: "Такой e-mail уже есть в активной очереди",
+    recipient_update_failed: "Не удалось обновить получателя",
+    recipient_not_found: "Получатель не найден",
     min_delay_too_low: "Минимальная пауза слишком маленькая",
     max_delay_must_exceed_min_delay: "Максимальная пауза должна быть больше минимальной",
     daily_limit_too_high: "Дневной лимит слишком высокий"

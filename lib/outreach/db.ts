@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import {outreachDbPath} from "@/lib/private/config";
+import {defaultOutreachTemplate, type OutreachStoredTemplate} from "@/lib/outreach/template";
 
 export type OutreachRecipientStatus =
   | "queued"
@@ -44,6 +45,8 @@ export type RecipientRow = {
   last_sent_at: string | null;
   last_error: string | null;
   source_upload_id: number | null;
+  history_match_type: "none" | "full" | "email" | "company";
+  history_match_detail: string | null;
 };
 
 export const defaultOutreachSettings: OutreachSettings = {
@@ -95,7 +98,7 @@ function initOutreachDb(database: Database.Database) {
       id integer primary key autoincrement,
       company text not null,
       email text not null,
-      email_hash text not null unique,
+      email_hash text not null,
       segment text,
       city text,
       note text,
@@ -104,7 +107,9 @@ function initOutreachDb(database: Database.Database) {
       updated_at text not null,
       last_sent_at text,
       last_error text,
-      source_upload_id integer
+      source_upload_id integer,
+      history_match_type text not null default 'none',
+      history_match_detail text
     );
 
     create table if not exists outreach_events (
@@ -121,12 +126,71 @@ function initOutreachDb(database: Database.Database) {
       value_json text not null,
       updated_at text not null
     );
+
+    create table if not exists outreach_template (
+      id integer primary key check (id = 1),
+      subject text not null,
+      body text not null,
+      updated_at text not null
+    );
   `);
+  migrateRecipientsTable(database);
+  addColumnIfMissing(database, "outreach_recipients", "history_match_type", "text not null default 'none'");
+  addColumnIfMissing(database, "outreach_recipients", "history_match_detail", "text");
+  database
+    .prepare("insert or ignore into outreach_template (id, subject, body, updated_at) values (1, ?, ?, ?)")
+    .run(defaultOutreachTemplate.subject, defaultOutreachTemplate.body, new Date().toISOString());
   for (const [key, value] of Object.entries(defaultOutreachSettings)) {
     database
       .prepare("insert or ignore into outreach_settings (key, value_json, updated_at) values (?, ?, ?)")
       .run(key, JSON.stringify(value), new Date().toISOString());
   }
+}
+
+function addColumnIfMissing(database: Database.Database, table: string, column: string, definition: string) {
+  const columns = database.prepare(`pragma table_info(${table})`).all() as Array<{name: string}>;
+  if (!columns.some((item) => item.name === column)) {
+    database.exec(`alter table ${table} add column ${column} ${definition}`);
+  }
+}
+
+function migrateRecipientsTable(database: Database.Database) {
+  const row = database
+    .prepare("select sql from sqlite_master where type = 'table' and name = 'outreach_recipients'")
+    .get() as {sql?: string} | undefined;
+  if (!row?.sql?.includes("email_hash text not null unique")) {
+    return;
+  }
+
+  database.exec(`
+    alter table outreach_recipients rename to outreach_recipients_old_unique;
+    create table outreach_recipients (
+      id integer primary key autoincrement,
+      company text not null,
+      email text not null,
+      email_hash text not null,
+      segment text,
+      city text,
+      note text,
+      status text not null,
+      created_at text not null,
+      updated_at text not null,
+      last_sent_at text,
+      last_error text,
+      source_upload_id integer,
+      history_match_type text not null default 'none',
+      history_match_detail text
+    );
+    insert into outreach_recipients (
+      id, company, email, email_hash, segment, city, note, status, created_at, updated_at,
+      last_sent_at, last_error, source_upload_id, history_match_type, history_match_detail
+    )
+    select
+      id, company, email, email_hash, segment, city, note, status, created_at, updated_at,
+      last_sent_at, last_error, source_upload_id, 'none', null
+    from outreach_recipients_old_unique;
+    drop table outreach_recipients_old_unique;
+  `);
 }
 
 export function getSettings(): OutreachSettings {
@@ -163,10 +227,90 @@ export function saveSettings(input: Partial<OutreachSettings>) {
   return next;
 }
 
+export function getOutreachTemplate(): OutreachStoredTemplate {
+  const row = getOutreachDb()
+    .prepare("select subject, body from outreach_template where id = 1")
+    .get() as OutreachStoredTemplate | undefined;
+  return row ?? defaultOutreachTemplate;
+}
+
+export function saveOutreachTemplate(template: OutreachStoredTemplate) {
+  const next = {
+    subject: template.subject.trim(),
+    body: template.body.trim()
+  };
+  const now = new Date().toISOString();
+  getOutreachDb()
+    .prepare(
+      "insert into outreach_template (id, subject, body, updated_at) values (1, ?, ?, ?) on conflict(id) do update set subject=excluded.subject, body=excluded.body, updated_at=excluded.updated_at"
+    )
+    .run(next.subject, next.body, now);
+  addEvent("template_changed", null, null, {});
+  return next;
+}
+
 export function addEvent(type: string, recipientId: number | null, messageId: string | null, detail: Record<string, unknown>) {
   getOutreachDb()
     .prepare("insert into outreach_events (timestamp, type, recipient_id, message_id, detail_json) values (?, ?, ?, ?, ?)")
     .run(new Date().toISOString(), type, recipientId, messageId, JSON.stringify(detail));
+}
+
+function normalizeCompany(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function matchSentHistory(company: string, email: string) {
+  const normalizedCompany = normalizeCompany(company);
+  const hash = emailHash(email);
+  const sent = getOutreachDb()
+    .prepare("select company, email, email_hash from outreach_recipients where status = 'sent'")
+    .all() as Array<{company: string; email: string; email_hash: string}>;
+
+  for (const row of sent) {
+    if (row.email_hash === hash && normalizeCompany(row.company) === normalizedCompany) {
+      return {type: "full" as const, detail: `Совпадает с отправленной историей: ${row.company} / ${row.email}`};
+    }
+  }
+  const emailMatch = sent.find((row) => row.email_hash === hash);
+  if (emailMatch) {
+    return {type: "email" as const, detail: `Email уже был в отправленной истории: ${emailMatch.email}`};
+  }
+  const companyMatch = sent.find((row) => {
+    const historicalCompany = normalizeCompany(row.company);
+    return (
+      normalizedCompany.length >= 3 &&
+      historicalCompany.length >= 3 &&
+      (normalizedCompany.includes(historicalCompany) || historicalCompany.includes(normalizedCompany))
+    );
+  });
+  if (companyMatch) {
+    return {type: "company" as const, detail: `Похоже на отправленную компанию: ${companyMatch.company}`};
+  }
+  return {type: "none" as const, detail: null};
+}
+
+export function updateRecipient(id: number, input: {company: string; email: string}) {
+  const company = input.company.trim();
+  const email = input.email.trim().toLowerCase();
+  if (!company || !email) {
+    throw new Error("recipient_fields_required");
+  }
+  const hash = emailHash(email);
+  const duplicate = getOutreachDb()
+    .prepare("select id from outreach_recipients where id != ? and email_hash = ? and status != 'sent' limit 1")
+    .get(id, hash) as {id: number} | undefined;
+  if (duplicate) {
+    throw new Error("recipient_email_duplicate");
+  }
+  const match = matchSentHistory(company, email);
+  const now = new Date().toISOString();
+  getOutreachDb()
+    .prepare(
+      "update outreach_recipients set company = ?, email = ?, email_hash = ?, history_match_type = ?, history_match_detail = ?, updated_at = ? where id = ?"
+    )
+    .run(company, email, hash, match.type, match.detail, now, id);
+  addEvent("recipient_updated", id, null, {history_match_type: match.type});
+  return {ok: true};
 }
 
 export function dashboardStatus() {

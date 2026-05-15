@@ -2,7 +2,7 @@ import process from "node:process";
 import dotenv from "dotenv";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
-import {getOutreachDb, getSettings, saveSettings, addEvent, type RecipientRow} from "../lib/outreach/db";
+import {getOutreachDb, getSettings, saveSettings, addEvent, getOutreachTemplate, type RecipientRow} from "../lib/outreach/db";
 import {renderOutreachEmail} from "../lib/outreach/template";
 
 dotenv.config({path: ".env.outreach", quiet: true});
@@ -43,7 +43,7 @@ function nextDelayIso() {
 
 async function sendRecipient(recipient: RecipientRow) {
   assertSendEnv();
-  const content = renderOutreachEmail({company: recipient.company, email: recipient.email});
+  const content = renderOutreachEmail({company: recipient.company, email: recipient.email}, getOutreachTemplate());
   const transporter = nodemailer.createTransport({
     host: env("SMTP_HOST"),
     port: Number(process.env.SMTP_PORT ?? 465),
