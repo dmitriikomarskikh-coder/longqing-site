@@ -322,13 +322,35 @@ export function createRecipient(input: {company: string; email: string}) {
   }
   const hash = emailHash(email);
   const duplicate = getOutreachDb()
-    .prepare("select id from outreach_recipients where email_hash = ? and status != 'sent' limit 1")
-    .get(hash) as {id: number} | undefined;
-  if (duplicate) {
-    throw new Error("recipient_email_duplicate");
-  }
+    .prepare("select id, status from outreach_recipients where email_hash = ? and status != 'sent' order by updated_at desc limit 1")
+    .get(hash) as {id: number; status: OutreachRecipientStatus} | undefined;
   const match = matchSentHistory(company, email);
   const now = new Date().toISOString();
+  if (duplicate) {
+    if (["do_not_contact", "unsubscribed", "bounced"].includes(duplicate.status)) {
+      throw new Error("recipient_blocked_status");
+    }
+    getOutreachDb()
+      .prepare(
+        "update outreach_recipients set company = ?, email = ?, email_hash = ?, status = 'queued', last_error = null, history_match_type = ?, history_match_detail = ?, updated_at = ? where id = ?"
+      )
+      .run(company, email, hash, match.type, match.detail, now, duplicate.id);
+    addEvent("recipient_reused", duplicate.id, null, {previous_status: duplicate.status, history_match_type: match.type});
+    return {
+      ok: true,
+      reused: true,
+      recipient: {
+        id: duplicate.id,
+        company,
+        email,
+        status: "queued",
+        created_at: now,
+        updated_at: now,
+        history_match_type: match.type,
+        history_match_detail: match.detail
+      }
+    };
+  }
   const result = getOutreachDb()
     .prepare(
       "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?)"

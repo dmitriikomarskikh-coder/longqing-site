@@ -163,7 +163,11 @@ export function OutreachDashboard() {
       body: JSON.stringify(manualRecipient)
     });
     const body = await parseJsonResponse(response);
-    setMessage(response.ok ? "Получатель добавлен в очередь" : translateError(body.error));
+    setMessage(
+      response.ok
+        ? (body.reused ? "Получатель уже был в базе, обновлён и возвращён в очередь" : "Получатель добавлен в очередь")
+        : translateError(body.error)
+    );
     if (response.ok) {
       setManualRecipient({company: "", email: ""});
       await refresh();
@@ -251,7 +255,7 @@ export function OutreachDashboard() {
             className={
               isRunning
                 ? "h-10 rounded border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
-                : "btn-primary h-10 px-4 text-sm"
+                : "h-10 rounded border border-slate-300 bg-white px-4 text-sm transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
             }
             type="button"
             aria-pressed={isRunning}
@@ -694,6 +698,7 @@ function translateEventType(type: string) {
     upload: "Загрузка базы",
     import: "Импорт",
     recipient_created: "Получатель добавлен",
+    recipient_reused: "Получатель возвращён в очередь",
     send_success: "Письмо отправлено",
     send_error: "Ошибка отправки",
     sent_append_failed: "Не удалось сохранить в Отправленные",
@@ -730,6 +735,7 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     company_required: "Укажите компанию",
     email_invalid: "Укажите корректный e-mail",
     recipient_email_duplicate: "Такой e-mail уже есть в активной очереди",
+    recipient_blocked_status: "Этот e-mail находится в списке исключений или отказов",
     recipient_create_failed: "Не удалось добавить получателя",
     recipient_fields_required: "Укажите компанию и e-mail",
     recipient_update_failed: "Не удалось обновить получателя",
