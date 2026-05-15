@@ -77,6 +77,7 @@ export function OutreachDashboard() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState({company: "", email: ""});
   const [manualRecipient, setManualRecipient] = useState({company: "", email: ""});
+  const [manualMessage, setManualMessage] = useState("");
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState("");
 
@@ -163,11 +164,12 @@ export function OutreachDashboard() {
       body: JSON.stringify(manualRecipient)
     });
     const body = await parseJsonResponse(response);
-    setMessage(
+    const nextMessage =
       response.ok
         ? (body.reused ? "Получатель уже был в базе, обновлён и возвращён в очередь" : "Получатель добавлен в очередь")
-        : translateError(body.error)
-    );
+        : translateError(body.error);
+    setManualMessage(nextMessage);
+    setMessage(nextMessage);
     if (response.ok) {
       setManualRecipient({company: "", email: ""});
       await refresh();
@@ -373,6 +375,7 @@ export function OutreachDashboard() {
         <p className="text-sm text-slate-600">
           Получатель попадёт в очередь. Если компания или e-mail совпадают с историей отправок, строка будет подсвечена.
         </p>
+        {manualMessage ? <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">{manualMessage}</p> : null}
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <Input
             name="manual_company"
@@ -735,7 +738,7 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     company_required: "Укажите компанию",
     email_invalid: "Укажите корректный e-mail",
     recipient_email_duplicate: "Такой e-mail уже есть в активной очереди",
-    recipient_blocked_status: "Этот e-mail находится в списке исключений или отказов",
+    recipient_blocked_status: "Этот e-mail находится в списке отписок или возвратов",
     recipient_create_failed: "Не удалось добавить получателя",
     recipient_fields_required: "Укажите компанию и e-mail",
     recipient_update_failed: "Не удалось обновить получателя",

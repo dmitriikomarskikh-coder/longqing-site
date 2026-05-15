@@ -327,7 +327,7 @@ export function createRecipient(input: {company: string; email: string}) {
   const match = matchSentHistory(company, email);
   const now = new Date().toISOString();
   if (duplicate) {
-    if (["do_not_contact", "unsubscribed", "bounced"].includes(duplicate.status)) {
+    if (["unsubscribed", "bounced"].includes(duplicate.status)) {
       throw new Error("recipient_blocked_status");
     }
     getOutreachDb()
