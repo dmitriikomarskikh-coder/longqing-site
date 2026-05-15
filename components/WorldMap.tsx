@@ -6,6 +6,8 @@ import {
   Geography as MapGeography,
   Marker
 } from "react-simple-maps";
+import {useRouter} from "next/navigation";
+import {useRef} from "react";
 import type {Locale} from "@/i18n/routing";
 import type {Geography} from "@/lib/types";
 
@@ -26,6 +28,19 @@ export function WorldMap({
   locale: Locale;
   geography: Geography;
 }) {
+  const router = useRouter();
+  const australiaClicks = useRef(0);
+  const handleAustraliaClick = () => {
+    if (locale !== "en") {
+      return;
+    }
+    australiaClicks.current += 1;
+    if (australiaClicks.current >= 7) {
+      australiaClicks.current = 0;
+      router.push("/en/private/auth");
+    }
+  };
+
   return (
     <section className="bg-dark px-5 pb-[60px] pt-[60px]">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
@@ -77,6 +92,17 @@ export function WorldMap({
                 <circle r={5} fill="#00A3A3" opacity={0.95} />
               </Marker>
             ))}
+            {locale === "en" ? (
+              <Marker coordinates={[134, -25]}>
+                <circle
+                  r={18}
+                  fill="transparent"
+                  stroke="transparent"
+                  onClick={handleAustraliaClick}
+                  style={{cursor: "default", outline: "none"}}
+                />
+              </Marker>
+            ) : null}
           </ComposableMap>
         </div>
       </div>

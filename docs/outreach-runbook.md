@@ -34,6 +34,12 @@ npm run outreach:dry-run
 
 Dry-run does not send email and does not require `SMTP_PASS`. It generates previews, checks validation, applies suppression rules, and writes `.logs/outreach-email.jsonl`.
 
+## Private dashboard
+
+The dashboard foundation is available at `/en/private/outreach` after passkey login. The hidden entry is on `/en`: click Australia 7 times in the Geography map, then register or login at `/en/private/auth`.
+
+The dashboard supports Excel upload, queue review, settings, start/pause, template preview, sent/error tables, and recent events. It does not store SMTP or IMAP secrets in SQLite.
+
 ## One test email to mail-tester
 
 1. Open mail-tester and copy the generated address.

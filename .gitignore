@@ -20,3 +20,7 @@ data/outreach/*.xls
 data/outreach/*.pdf
 data/outreach/*.log
 .logs/
+.data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

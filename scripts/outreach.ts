@@ -6,6 +6,7 @@ import {fileURLToPath} from "node:url";
 import dotenv from "dotenv";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
+import {renderOutreachEmail, isValidOutreachEmail} from "../lib/outreach/template";
 
 type Mode = "dry-run" | "test-send" | "batch-send" | "report";
 
@@ -39,12 +40,7 @@ type Suppression = {
   created_at: string;
 };
 
-type EmailContent = {
-  subject: string;
-  text: string;
-  html: string;
-  templateVariant: string;
-};
+type EmailContent = ReturnType<typeof renderOutreachEmail>;
 
 type LogRecord = {
   timestamp: string;
@@ -103,29 +99,6 @@ const blockedStatuses = new Set<RecipientStatus>([
   "unsubscribed",
   "do_not_contact"
 ]);
-
-const subjects = [
-  "MTU — складские позиции в Китае, готовность к отгрузке",
-  "Запчасти MTU в наличии: ремонтные позиции, охлаждение, наддув",
-  "MTU: складские запчасти для ремонта двигателей и установок",
-  "Наличие MTU со склада в Китае — поставка в РФ под ключ",
-  "Запрос по MTU: складские позиции и поставка в Россию"
-];
-
-const firstParagraphs = [
-  "Пишу по запчастям MTU. Сейчас есть складское наличие в Китае по ряду позиций для ремонта и обслуживания дизельных двигателей / силовых установок MTU: поршневая группа, гильзы, вкладыши, уплотнения, элементы охлаждения, турбокомпрессоры, трубки высокого давления и другие позиции.",
-  "Обращаюсь к вам как к компании, которая может работать с поставками, ремонтом или эксплуатацией оборудования MTU. Сейчас доступны позиции MTU на складе в Китае для подготовки к отгрузке и дальнейшей поставки.",
-  "По MTU сейчас можно оперативно обработать запрос по складским позициям в Китае: ремонтные детали, элементы охлаждения и наддува, уплотнения, трубки высокого давления и другие позиции для двигателей и установок."
-];
-
-const stockRows = [
-  ["EX00008371", "Поршень / Piston", "16"],
-  ["5240114210", "Гильза цилиндра / Cylinder liner", "32"],
-  ["5550110259", "Уплотнения гильзы", "64"],
-  ["EXT0110100193", "Турбокомпрессор 12V", "4"],
-  ["EXT0210100167", "Турбокомпрессор 16V", "4"],
-  ["EX52811400063", "Охладитель наддувочного воздуха", "1"]
-];
 
 const blockedAttachmentColumns = [
   "source_urls",
@@ -310,99 +283,8 @@ function writeRecipients(recipients: Recipient[]) {
   fs.writeFileSync(recipientsPath, `${stringifyCsv(headers, recipients)}\n`);
 }
 
-function isValidEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function hashSeed(recipient: Pick<Recipient, "email" | "company">) {
-  const hex = crypto
-    .createHash("sha256")
-    .update(`${recipient.email.toLowerCase()}|${recipient.company.toLowerCase()}`)
-    .digest("hex")
-    .slice(0, 8);
-  return Number.parseInt(hex, 16);
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function greeting(recipient: Recipient) {
-  return recipient.contact_name ? recipient.contact_name : "";
-}
-
 function buildEmail(recipient: Recipient): EmailContent {
-  const seed = hashSeed(recipient);
-  const subjectIndex = seed % subjects.length;
-  const paragraphIndex = seed % firstParagraphs.length;
-  const greetingName = greeting(recipient);
-  const helloLine = greetingName ? `Здравствуйте, ${greetingName}.` : "Здравствуйте.";
-  const stockTableText = [
-    "Part number | Наименование | Кол-во",
-    ...stockRows.map((row) => row.join(" | "))
-  ].join("\n");
-  const text = [
-    helloLine,
-    "",
-    firstParagraphs[paragraphIndex],
-    "",
-    "Основное:",
-    "- позиции находятся на складе в Китае и готовы к подготовке/отгрузке;",
-    "- возможна продажа со склада в Китае;",
-    "- возможна поставка в Россию под ключ с логистикой и таможенным оформлением;",
-    "- варианты оплаты обсуждаются индивидуально;",
-    "- цены — по запросу, в зависимости от объёма, условий поставки и формата оплаты.",
-    "",
-    "Ключевые позиции по наличию:",
-    "",
-    stockTableText,
-    "",
-    "Если у вас есть актуальная потребность по MTU, пришлите интересующие номера деталей — подготовим предложение.",
-    "",
-    "С уважением,",
-    "LONGQING TRADE",
-    "office@longqingtrade.com",
-    "+7 905 074 97 77",
-    "https://longqingtrade.com",
-    "",
-    "Если вопрос неактуален, напишите, пожалуйста, «неактуально» — больше не будем обращаться по этой теме."
-  ].join("\n");
-
-  const html = [
-    `<p>${escapeHtml(helloLine)}</p>`,
-    `<p>${escapeHtml(firstParagraphs[paragraphIndex])}</p>`,
-    "<p>Основное:</p>",
-    "<ul>",
-    "<li>позиции находятся на складе в Китае и готовы к подготовке/отгрузке;</li>",
-    "<li>возможна продажа со склада в Китае;</li>",
-    "<li>возможна поставка в Россию под ключ с логистикой и таможенным оформлением;</li>",
-    "<li>варианты оплаты обсуждаются индивидуально;</li>",
-    "<li>цены — по запросу, в зависимости от объёма, условий поставки и формата оплаты.</li>",
-    "</ul>",
-    "<p>Ключевые позиции по наличию:</p>",
-    '<table border="1" cellpadding="6" cellspacing="0">',
-    "<tr><th>Part number</th><th>Наименование</th><th>Кол-во</th></tr>",
-    ...stockRows.map(
-      ([partNumber, name, quantity]) =>
-        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(name)}</td><td>${escapeHtml(quantity)}</td></tr>`
-    ),
-    "</table>",
-    "<p>Если у вас есть актуальная потребность по MTU, пришлите интересующие номера деталей — подготовим предложение.</p>",
-    '<p>С уважением,<br>LONGQING TRADE<br>office@longqingtrade.com<br>+7 905 074 97 77<br><a href="https://longqingtrade.com">https://longqingtrade.com</a></p>',
-    "<p>Если вопрос неактуален, напишите, пожалуйста, «неактуально» — больше не будем обращаться по этой теме.</p>"
-  ].join("\n");
-
-  return {
-    subject: subjects[subjectIndex],
-    text,
-    html,
-    templateVariant: `subject-${subjectIndex + 1}/intro-${paragraphIndex + 1}`
-  };
+  return renderOutreachEmail(recipient);
 }
 
 function buildRawMessage(content: EmailContent, to: string) {
@@ -465,7 +347,7 @@ function classifyRecipient(recipient: Recipient, seen: Set<string>, suppressions
     return "missing_email";
   }
 
-  if (!isValidEmail(email)) {
+  if (!isValidOutreachEmail(email)) {
     return "invalid_email";
   }
 
@@ -741,7 +623,7 @@ async function testSend() {
   if (!recipientEmail) {
     fail("OUTREACH_TEST_RECIPIENT is required for test-send");
   }
-  if (!isValidEmail(recipientEmail)) {
+  if (!isValidOutreachEmail(recipientEmail)) {
     fail("OUTREACH_TEST_RECIPIENT is not a valid email");
   }
 
