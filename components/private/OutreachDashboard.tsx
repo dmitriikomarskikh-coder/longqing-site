@@ -82,6 +82,7 @@ export function OutreachDashboard() {
   const [draggedQueueId, setDraggedQueueId] = useState<number | null>(null);
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState("");
+  const [moscowNow, setMoscowNow] = useState("");
 
   const settings = status?.settings;
   const weekdays = useMemo(() => ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], []);
@@ -107,6 +108,15 @@ export function OutreachDashboard() {
 
   useEffect(() => {
     refresh().catch(() => setMessage("Не удалось загрузить данные панели"));
+  }, []);
+
+  useEffect(() => {
+    function updateMoscowClock() {
+      setMoscowNow(formatMoscowDateTime(new Date()));
+    }
+    updateMoscowClock();
+    const timer = window.setInterval(updateMoscowClock, 1000);
+    return () => window.clearInterval(timer);
   }, []);
 
   async function control(action: "start" | "pause") {
@@ -292,7 +302,7 @@ export function OutreachDashboard() {
 
       <section className="grid gap-4 md:grid-cols-4">
         <Stat label="Статус" value={settings?.enabled ? "Запущена" : "На паузе"} />
-        <Stat label="Время в Москве" value={status?.moscowNow ?? "-"} />
+        <Stat label="Время в Москве" value={moscowNow || status?.moscowNow || "-"} />
         <Stat label="Отправлено сегодня" value={`${status?.todaySent ?? 0} / ${settings?.daily_limit ?? 0}`} />
         <Stat label="Очередь / отправлено / ошибки" value={`${status?.queued ?? 0} / ${status?.sent ?? 0} / ${status?.errors ?? 0}`} />
       </section>
@@ -583,6 +593,39 @@ function numberValue(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function formatMoscowDateTime(date: Date) {
+  return date.toLocaleString("ru-RU", {
+    timeZone: "Europe/Moscow",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+function formatRuDateTime(value: string | null) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  const parts = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("day")} ${get("month")} ${get("year")}г. ${get("hour")}:${get("minute")}:${get("second")}`;
+}
+
 function Table({
   title,
   rows,
@@ -673,7 +716,7 @@ function Table({
                     <span title={row.history_match_detail ?? undefined}>{translateHistoryMatch(row.history_match_type)}</span>
                   )}
                 </td>
-                <td className="p-3">{row.updated_at}</td>
+                <td className="p-3">{formatRuDateTime(row.updated_at)}</td>
                 <td className="p-3">{row.last_error ?? ""}</td>
                 {editable || removable ? (
                   <td className="p-3">
@@ -692,7 +735,7 @@ function Table({
                           Редактировать
                         </button>
                         <button className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700" type="button" onClick={() => onExclude?.(row)}>
-                          Исключить
+                          Удалить
                         </button>
                       </div>
                     ) : (
