@@ -6,7 +6,6 @@ import {useEffect, useMemo, useState} from "react";
 type Status = {
   settings: {
     enabled: boolean;
-    copy_approved: boolean;
     allowed_days: number[];
     allowed_time_start: string;
     allowed_time_end: string;
@@ -55,7 +54,6 @@ type SettingsDraft = Status["settings"];
 
 const defaultSettingsDraft: SettingsDraft = {
   enabled: false,
-  copy_approved: false,
   allowed_days: [1, 2, 3, 4, 5],
   allowed_time_start: "10:00",
   allowed_time_end: "18:00",
@@ -85,7 +83,18 @@ export function OutreachDashboard() {
   const [moscowNow, setMoscowNow] = useState("");
 
   const settings = status?.settings;
-  const weekdays = useMemo(() => ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], []);
+  const weekdays = useMemo(
+    () => [
+      {label: "Пн", value: 1},
+      {label: "Вт", value: 2},
+      {label: "Ср", value: 3},
+      {label: "Чт", value: 4},
+      {label: "Пт", value: 5},
+      {label: "Сб", value: 6},
+      {label: "Вс", value: 0}
+    ],
+    []
+  );
 
   async function refresh() {
     const [nextStatus, nextQueue, nextSent, nextErrors, nextEvents, nextTemplate] = await Promise.all([
@@ -156,7 +165,6 @@ export function OutreachDashboard() {
       min_delay_minutes: settingsDraft.min_delay_minutes,
       max_delay_minutes: settingsDraft.max_delay_minutes,
       daily_limit: settingsDraft.daily_limit,
-      copy_approved: settingsDraft.copy_approved
     };
     const response = await fetch("/api/private/outreach/settings", {
       method: "POST",
@@ -341,22 +349,22 @@ export function OutreachDashboard() {
         <form onSubmit={saveSettings} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-xl font-semibold">Настройки</h2>
           <div className="flex flex-wrap gap-3">
-            {weekdays.map((day, index) => (
-              <label key={day} className="flex items-center gap-2 text-sm">
+            {weekdays.map((day) => (
+              <label key={day.value} className="flex items-center gap-2 text-sm">
                 <input
-                  name={`day-${index}`}
+                  name={`day-${day.value}`}
                   type="checkbox"
-                  checked={settingsDraft.allowed_days.includes(index)}
+                  checked={settingsDraft.allowed_days.includes(day.value)}
                   onChange={(event) =>
                     setSettingsDraft((current) => ({
                       ...current,
                       allowed_days: event.target.checked
-                        ? [...new Set([...current.allowed_days, index])].sort((left, right) => left - right)
-                        : current.allowed_days.filter((dayIndex) => dayIndex !== index)
+                        ? [...new Set([...current.allowed_days, day.value])].sort((left, right) => left - right)
+                        : current.allowed_days.filter((dayIndex) => dayIndex !== day.value)
                     }))
                   }
                 />
-                {day}
+                {day.label}
               </label>
             ))}
           </div>
@@ -399,15 +407,9 @@ export function OutreachDashboard() {
               onChange={(value) => setSettingsDraft((current) => ({...current, daily_limit: numberValue(value)}))}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              name="copy_approved"
-              type="checkbox"
-              checked={settingsDraft.copy_approved}
-              onChange={(event) => setSettingsDraft((current) => ({...current, copy_approved: event.target.checked}))}
-            />
-            Текст письма согласован
-          </label>
+          <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            {formatSendCapacity(settingsDraft)}
+          </p>
           <button className="btn-primary h-10 w-fit px-4 text-sm" type="submit">
             Сохранить настройки
           </button>
@@ -624,6 +626,36 @@ function formatRuDateTime(value: string | null) {
   }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
   return `${get("day")} ${get("month")} ${get("year")}г. ${get("hour")}:${get("minute")}:${get("second")}`;
+}
+
+function minutesFromTime(value: string) {
+  const [hours, minutes] = value.split(":").map((part) => Number(part));
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+  return hours * 60 + minutes;
+}
+
+function sendCountForWindow(windowMinutes: number, delayMinutes: number) {
+  if (windowMinutes < 0 || delayMinutes <= 0) {
+    return 0;
+  }
+  return Math.floor(windowMinutes / delayMinutes) + 1;
+}
+
+function formatSendCapacity(settings: SettingsDraft) {
+  const start = minutesFromTime(settings.allowed_time_start);
+  const end = minutesFromTime(settings.allowed_time_end);
+  const minDelay = Math.max(3, Number(settings.min_delay_minutes) || 0);
+  const maxDelay = Math.max(minDelay, Number(settings.max_delay_minutes) || minDelay);
+  if (start === null || end === null || end < start) {
+    return "Количество писем для отправки в указанное время: проверьте начало и окончание окна по Москве.";
+  }
+  const windowMinutes = end - start;
+  const minimum = sendCountForWindow(windowMinutes, maxDelay);
+  const maximum = sendCountForWindow(windowMinutes, minDelay);
+  const average = Math.round((minimum + maximum) / 2);
+  return `Количество писем для отправки в указанное время по Москве: от ${minimum} до ${maximum} в сутки. Среднее значение: ${average}.`;
 }
 
 function Table({
@@ -888,7 +920,6 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     queue_reorder_failed: "Не удалось изменить порядок очереди",
     outreach_send_disabled: "Отправка выключена в server env",
     smtp_or_imap_env_missing: "Не настроены SMTP/IMAP переменные на сервере",
-    copy_not_approved: "Сначала подтвердите согласование текста письма",
     queue_empty: "Очередь пуста",
     min_delay_invalid: "Укажите корректную минимальную паузу",
     min_delay_too_low: "Минимальная пауза слишком маленькая",

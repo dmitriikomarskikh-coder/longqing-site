@@ -42,8 +42,7 @@ export async function POST(request: Request) {
       allowed_time_end: typeof body.allowed_time_end === "string" ? body.allowed_time_end : undefined,
       min_delay_minutes: minDelay,
       max_delay_minutes: maxDelay,
-      daily_limit: dailyLimit,
-      copy_approved: Boolean(body.copy_approved)
+      daily_limit: dailyLimit
     }),
     {headers: privateHeaders()}
   );

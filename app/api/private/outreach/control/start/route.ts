@@ -12,9 +12,6 @@ export async function POST() {
   if (!hasOutreachSendCredentials()) {
     return Response.json({error: "smtp_or_imap_env_missing"}, {status: 400, headers: privateHeaders()});
   }
-  if (!status.settings.copy_approved) {
-    return Response.json({error: "copy_not_approved"}, {status: 400, headers: privateHeaders()});
-  }
   if (status.queued <= 0) {
     return Response.json({error: "queue_empty"}, {status: 400, headers: privateHeaders()});
   }

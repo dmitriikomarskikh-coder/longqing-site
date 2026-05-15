@@ -118,7 +118,7 @@ async function appendSent(to: string, subject: string, text: string, html: strin
 
 async function tick() {
   const settings = getSettings();
-  if (!settings.enabled || !settings.copy_approved) return;
+  if (!settings.enabled) return;
   if (!settings.require_sent_append || env("OUTREACH_REQUIRE_SENT_APPEND") !== "true") return;
   if (!isInsideSchedule()) return;
   if (settings.next_send_after && new Date(settings.next_send_after).getTime() > Date.now()) return;
