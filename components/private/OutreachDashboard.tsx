@@ -52,7 +52,7 @@ export function OutreachDashboard() {
   const [message, setMessage] = useState("");
 
   const settings = status?.settings;
-  const weekdays = useMemo(() => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], []);
+  const weekdays = useMemo(() => ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], []);
 
   async function refresh() {
     const [nextStatus, nextQueue, nextSent, nextErrors, nextEvents, nextTemplate] = await Promise.all([
@@ -72,13 +72,13 @@ export function OutreachDashboard() {
   }
 
   useEffect(() => {
-    refresh().catch(() => setMessage("Failed to load dashboard data"));
+    refresh().catch(() => setMessage("Не удалось загрузить данные панели"));
   }, []);
 
   async function control(action: "start" | "pause") {
     const response = await fetch(`/api/private/outreach/control/${action}`, {method: "POST"});
     const body = await response.json();
-    setMessage(response.ok ? `${action} saved` : body.error ?? "Control failed");
+    setMessage(response.ok ? (action === "start" ? "Рассылка включена" : "Рассылка поставлена на паузу") : translateError(body.error));
     await refresh();
   }
 
@@ -86,6 +86,7 @@ export function OutreachDashboard() {
     const response = await fetch("/api/private/outreach/upload", {method: "POST", body: formData});
     const body = await response.json();
     setUploadSummary(body);
+    setMessage(response.ok ? "Файл обработан" : translateError(body.error));
     await refresh();
   }
 
@@ -108,7 +109,7 @@ export function OutreachDashboard() {
       body: JSON.stringify(payload)
     });
     const body = await response.json();
-    setMessage(response.ok ? "Settings saved" : body.error ?? "Settings error");
+    setMessage(response.ok ? "Настройки сохранены" : translateError(body.error));
     await refresh();
   }
 
@@ -117,33 +118,33 @@ export function OutreachDashboard() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-slate-950">Рассылка MTU</h1>
-          <p className="mt-2 text-sm text-slate-600">Закрытая очередь B2B outreach. Отправка идёт только серверным worker.</p>
+          <p className="mt-2 text-sm text-slate-600">Закрытая очередь B2B-рассылки. Отправка выполняется только фоновым серверным процессом.</p>
         </div>
         <button className="rounded border border-slate-300 px-4 py-2 text-sm" onClick={refresh} type="button">
-          Force refresh
+          Обновить
         </button>
       </div>
 
       {message ? <p className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p> : null}
 
       <section className="grid gap-4 md:grid-cols-4">
-        <Stat label="Status" value={settings?.enabled ? "Running" : "Paused"} />
-        <Stat label="Moscow time" value={status?.moscowNow ?? "-"} />
-        <Stat label="Today sent" value={`${status?.todaySent ?? 0} / ${settings?.daily_limit ?? 0}`} />
-        <Stat label="Queue / sent / errors" value={`${status?.queued ?? 0} / ${status?.sent ?? 0} / ${status?.errors ?? 0}`} />
+        <Stat label="Статус" value={settings?.enabled ? "Запущена" : "На паузе"} />
+        <Stat label="Время в Москве" value={status?.moscowNow ?? "-"} />
+        <Stat label="Отправлено сегодня" value={`${status?.todaySent ?? 0} / ${settings?.daily_limit ?? 0}`} />
+        <Stat label="Очередь / отправлено / ошибки" value={`${status?.queued ?? 0} / ${status?.sent ?? 0} / ${status?.errors ?? 0}`} />
       </section>
 
       <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-xl font-semibold">Controls</h2>
+        <h2 className="text-xl font-semibold">Управление</h2>
         <div className="flex flex-wrap gap-3">
           <button className="btn-primary h-10 px-4 text-sm" type="button" onClick={() => control("start")}>
-            Start
+            Запустить
           </button>
           <button className="rounded border border-slate-300 px-4 py-2 text-sm" type="button" onClick={() => control("pause")}>
-            Pause
+            Пауза
           </button>
           <button className="rounded border border-slate-300 px-4 py-2 text-sm" type="button" onClick={refresh}>
-            Run dry-run / Preview only
+            Обновить предпросмотр
           </button>
         </div>
       </section>
@@ -160,18 +161,18 @@ export function OutreachDashboard() {
             ))}
           </div>
           <div className="grid gap-3 md:grid-cols-5">
-            <Input name="allowed_time_start" label="Start MSK" defaultValue={settings.allowed_time_start} />
-            <Input name="allowed_time_end" label="End MSK" defaultValue={settings.allowed_time_end} />
-            <Input name="min_delay_minutes" label="Min delay" defaultValue={settings.min_delay_minutes} />
-            <Input name="max_delay_minutes" label="Max delay" defaultValue={settings.max_delay_minutes} />
-            <Input name="daily_limit" label="Daily limit" defaultValue={settings.daily_limit} />
+            <Input name="allowed_time_start" label="Начало, МСК" defaultValue={settings.allowed_time_start} />
+            <Input name="allowed_time_end" label="Окончание, МСК" defaultValue={settings.allowed_time_end} />
+            <Input name="min_delay_minutes" label="Мин. пауза, мин" defaultValue={settings.min_delay_minutes} />
+            <Input name="max_delay_minutes" label="Макс. пауза, мин" defaultValue={settings.max_delay_minutes} />
+            <Input name="daily_limit" label="Лимит в день" defaultValue={settings.daily_limit} />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input name="copy_approved" type="checkbox" defaultChecked={settings.copy_approved} />
-            Copy/template approved
+            Текст письма согласован
           </label>
           <button className="btn-primary h-10 w-fit px-4 text-sm" type="submit">
-            Save settings
+            Сохранить настройки
           </button>
         </form>
       ) : null}
@@ -180,13 +181,13 @@ export function OutreachDashboard() {
         action={upload}
         className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
       >
-        <h2 className="text-xl font-semibold">Upload recipients</h2>
-        <p className="text-sm text-slate-600">Excel: колонка A — компания, колонка B — email. Upload does not start sending.</p>
+        <h2 className="text-xl font-semibold">Загрузка получателей</h2>
+        <p className="text-sm text-slate-600">Excel: колонка A — компания, колонка B — email. Загрузка не запускает отправку.</p>
         <input name="file" type="file" accept=".xlsx,.csv" className="rounded border border-slate-200 p-3 text-sm" />
         <button className="btn-primary h-10 w-fit px-4 text-sm" type="submit">
-          Upload
+          Загрузить
         </button>
-        {uploadSummary ? <pre className="overflow-auto rounded bg-slate-50 p-3 text-xs">{JSON.stringify(uploadSummary, null, 2)}</pre> : null}
+        {uploadSummary ? <UploadSummary summary={uploadSummary} /> : null}
       </form>
 
       <Table title="Очередь" rows={queue} />
@@ -202,10 +203,10 @@ export function OutreachDashboard() {
       </section>
 
       <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-xl font-semibold">Event log</h2>
+        <h2 className="text-xl font-semibold">Журнал событий</h2>
         <div className="grid gap-2 text-xs text-slate-600">
           {events.map((event) => (
-            <p key={event.id}>{event.timestamp} — {event.type} — {event.message_id ?? ""}</p>
+            <p key={event.id}>{event.timestamp} — {translateEventType(event.type)} — {event.message_id ?? ""}</p>
           ))}
         </div>
       </section>
@@ -239,11 +240,11 @@ function Table({title, rows}: {title: string; rows: Recipient[]}) {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
-              <th className="p-3">Company</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Updated</th>
-              <th className="p-3">Error</th>
+              <th className="p-3">Компания</th>
+              <th className="p-3">E-mail</th>
+              <th className="p-3">Статус</th>
+              <th className="p-3">Обновлено</th>
+              <th className="p-3">Ошибка</th>
             </tr>
           </thead>
           <tbody>
@@ -251,7 +252,7 @@ function Table({title, rows}: {title: string; rows: Recipient[]}) {
               <tr key={row.id} className="border-t border-slate-100">
                 <td className="p-3">{row.company}</td>
                 <td className="p-3">{row.email}</td>
-                <td className="p-3">{row.status}</td>
+                <td className="p-3">{translateRecipientStatus(row.status)}</td>
                 <td className="p-3">{row.updated_at}</td>
                 <td className="p-3">{row.last_error ?? ""}</td>
               </tr>
@@ -261,4 +262,72 @@ function Table({title, rows}: {title: string; rows: Recipient[]}) {
       </div>
     </section>
   );
+}
+
+function UploadSummary({summary}: {summary: Record<string, unknown>}) {
+  const fields = ([
+    ["Всего строк", summary.rows_total],
+    ["Импортировано", summary.imported ?? summary.rows_imported],
+    ["Пропущено", summary.skipped ?? summary.rows_skipped],
+    ["Дубликаты", summary.skipped_duplicates],
+    ["Некорректные email", summary.skipped_invalid],
+    ["ID загрузки", summary.upload_id],
+    ["Ошибка", typeof summary.error === "string" ? translateError(summary.error) : summary.error]
+  ] as Array<[string, unknown]>).filter(([, value]) => value !== undefined && value !== null);
+
+  return (
+    <dl className="grid gap-2 rounded bg-slate-50 p-3 text-xs text-slate-700 sm:grid-cols-2">
+      {fields.map(([label, value]) => (
+        <div key={String(label)} className="grid gap-1">
+          <dt className="font-medium text-slate-500">{label}</dt>
+          <dd className="text-slate-900">{String(value)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function translateRecipientStatus(status: string) {
+  const labels: Record<string, string> = {
+    queued: "В очереди",
+    paused: "На паузе",
+    sent: "Отправлено",
+    error: "Ошибка",
+    skipped: "Пропущено",
+    unsubscribed: "Отписался",
+    do_not_contact: "Не контактировать",
+    bounced: "Возврат письма"
+  };
+  return labels[status] ?? status;
+}
+
+function translateEventType(type: string) {
+  const labels: Record<string, string> = {
+    started: "Запущено",
+    paused: "Поставлено на паузу",
+    settings_changed: "Настройки изменены",
+    upload: "Загрузка базы",
+    import: "Импорт",
+    send_success: "Письмо отправлено",
+    send_error: "Ошибка отправки",
+    sent_append_failed: "Не удалось сохранить в Отправленные",
+    do_not_contact: "Помечено как не контактировать",
+    requeue: "Возвращено в очередь"
+  };
+  return labels[type] ?? type;
+}
+
+function translateError(error: unknown) {
+  if (typeof error !== "string" || !error) {
+    return "Операция не выполнена";
+  }
+  const labels: Record<string, string> = {
+    authentication_required: "Требуется вход",
+    private_disabled: "Закрытый кабинет отключён",
+    file_required: "Выберите файл",
+    min_delay_too_low: "Минимальная пауза слишком маленькая",
+    max_delay_must_exceed_min_delay: "Максимальная пауза должна быть больше минимальной",
+    daily_limit_too_high: "Дневной лимит слишком высокий"
+  };
+  return labels[error] ?? error;
 }

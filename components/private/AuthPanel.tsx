@@ -22,18 +22,18 @@ export function AuthPanel() {
     fetch(`/api/private/auth/status?setupToken=${encodeURIComponent(setupToken)}`)
       .then((response) => response.json())
       .then(setStatus)
-      .catch(() => setMessage("Failed to load auth status"));
+      .catch(() => setMessage("Не удалось загрузить статус авторизации"));
   }, [setupToken]);
 
   async function register() {
-    setMessage("Starting passkey registration...");
+    setMessage("Запускаем регистрацию ключа доступа...");
     const options = await fetch("/api/private/auth/register/options", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({setupToken})
     }).then((response) => response.json());
     if (options.error) {
-      setMessage(options.error);
+      setMessage(translateAuthError(options.error));
       return;
     }
     const response = await startRegistration(options);
@@ -45,17 +45,17 @@ export function AuthPanel() {
     if (result.ok) {
       router.push("/en/private/outreach");
     } else {
-      setMessage(result.error ?? "Registration failed");
+      setMessage(translateAuthError(result.error) ?? "Не удалось зарегистрировать ключ доступа");
     }
   }
 
   async function login() {
-    setMessage("Starting passkey login...");
+    setMessage("Запускаем вход по ключу доступа...");
     const options = await fetch("/api/private/auth/login/options", {method: "POST"}).then((response) =>
       response.json()
     );
     if (options.error) {
-      setMessage(options.error);
+      setMessage(translateAuthError(options.error));
       return;
     }
     const response = await startAuthentication(options);
@@ -67,40 +67,52 @@ export function AuthPanel() {
     if (result.ok) {
       router.push("/en/private/outreach");
     } else {
-      setMessage(result.error ?? "Login failed");
+      setMessage(translateAuthError(result.error) ?? "Не удалось войти по ключу доступа");
     }
   }
 
   if (!status) {
-    return <p className="text-sm text-neutral-500">Loading...</p>;
+    return <p className="text-sm text-neutral-500">Загрузка...</p>;
   }
 
   if (!status.enabled) {
-    return <p className="text-sm text-neutral-600">Private cabinet is disabled.</p>;
+    return <p className="text-sm text-neutral-600">Закрытый кабинет отключён.</p>;
   }
 
   return (
     <div className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div>
-        <h1 className="text-3xl font-semibold text-slate-950">LONGQING private access</h1>
+        <h1 className="text-3xl font-semibold text-slate-950">Закрытый доступ LONGQING</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Passkey access is required for the outreach dashboard.
+          Для входа в панель рассылки требуется ключ доступа.
         </p>
       </div>
       {status.registered ? (
         <button className="btn-primary h-11 px-5 text-sm" type="button" onClick={login}>
-          Войти по passkey
+          Войти по ключу доступа
         </button>
       ) : status.setupAllowed ? (
         <button className="btn-primary h-11 px-5 text-sm" type="button" onClick={register}>
-          Зарегистрировать owner passkey
+          Зарегистрировать ключ доступа владельца
         </button>
       ) : (
         <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          Passkey is not registered. Add the server-only setup token as `?setup=...` to enroll the owner passkey.
+          Ключ доступа ещё не зарегистрирован. Добавьте серверный токен настройки в URL как `?setup=...`, чтобы зарегистрировать ключ доступа владельца.
         </p>
       )}
       {message ? <p className="text-sm text-slate-500">{message}</p> : null}
     </div>
   );
+}
+
+function translateAuthError(error: unknown) {
+  if (typeof error !== "string" || !error) {
+    return "Операция не выполнена";
+  }
+  const labels: Record<string, string> = {
+    private_disabled: "Закрытый кабинет отключён",
+    passkey_not_registered: "Ключ доступа ещё не зарегистрирован",
+    setup_not_allowed: "Регистрация по этому токену настройки недоступна"
+  };
+  return labels[error] ?? error;
 }

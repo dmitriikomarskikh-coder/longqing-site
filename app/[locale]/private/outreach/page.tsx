@@ -5,7 +5,7 @@ import {privateEnabled} from "@/lib/private/config";
 import {hasPrivateSession} from "@/lib/private/session";
 
 export const metadata: Metadata = {
-  title: "Private outreach | LONGQING",
+  title: "Панель рассылки | LONGQING",
   robots: {index: false, follow: false, nocache: true, googleBot: {index: false, follow: false, noimageindex: true}}
 };
 
