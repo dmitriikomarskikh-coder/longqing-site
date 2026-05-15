@@ -83,11 +83,19 @@ export function OutreachDashboard() {
   }
 
   async function upload(formData: FormData) {
-    const response = await fetch("/api/private/outreach/upload", {method: "POST", body: formData});
-    const body = await response.json();
-    setUploadSummary(body);
-    setMessage(response.ok ? "Файл обработан" : translateError(body.error));
-    await refresh();
+    setMessage("Загружаем файл...");
+    try {
+      const response = await fetch("/api/private/outreach/upload", {method: "POST", body: formData});
+      const body = await parseJsonResponse(response);
+      setUploadSummary(body);
+      setMessage(response.ok ? "Файл обработан" : translateError(body.error));
+      if (response.ok) {
+        await refresh();
+      }
+    } catch {
+      setUploadSummary({error: "upload_failed"});
+      setMessage(translateError("upload_failed"));
+    }
   }
 
   async function saveSettings(formData: FormData) {
@@ -317,6 +325,14 @@ function translateEventType(type: string) {
   return labels[type] ?? type;
 }
 
+async function parseJsonResponse(response: Response) {
+  try {
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return {error: "invalid_server_response"};
+  }
+}
+
 function translateError(error: unknown) {
   if (typeof error !== "string" || !error) {
     return "Операция не выполнена";
@@ -325,6 +341,12 @@ function translateError(error: unknown) {
     authentication_required: "Требуется вход",
     private_disabled: "Закрытый кабинет отключён",
     file_required: "Выберите файл",
+    file_too_large: "Файл слишком большой. Максимальный размер — 2 МБ",
+    unsupported_file_type: "Поддерживаются только .xlsx и .csv",
+    workbook_is_empty: "В книге не найден первый лист с данными",
+    invalid_workbook: "Не удалось прочитать Excel-файл",
+    invalid_server_response: "Сервер вернул некорректный ответ",
+    upload_failed: "Не удалось загрузить файл. Проверьте формат и попробуйте ещё раз",
     min_delay_too_low: "Минимальная пауза слишком маленькая",
     max_delay_must_exceed_min_delay: "Максимальная пауза должна быть больше минимальной",
     daily_limit_too_high: "Дневной лимит слишком высокий"
