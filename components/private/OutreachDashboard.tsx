@@ -113,6 +113,11 @@ export function OutreachDashboard() {
     await refresh();
   }
 
+  async function logout() {
+    await fetch("/api/private/auth/logout", {method: "POST"});
+    window.location.href = "/en/private/auth";
+  }
+
   async function upload(formData: FormData) {
     setMessage("Загружаем файл...");
     try {
@@ -224,8 +229,8 @@ export function OutreachDashboard() {
           <h1 className="text-3xl font-semibold text-slate-950">Рассылка MTU</h1>
           <p className="mt-2 text-sm text-slate-600">Закрытая очередь B2B-рассылки. Отправка выполняется только фоновым серверным процессом.</p>
         </div>
-        <button className="rounded border border-slate-300 px-4 py-2 text-sm" onClick={refresh} type="button">
-          Обновить
+        <button className="rounded border border-slate-300 px-4 py-2 text-sm" onClick={logout} type="button">
+          Выйти
         </button>
       </div>
 
@@ -708,7 +713,7 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     max_delay_invalid: "Укажите корректную максимальную паузу",
     max_delay_must_exceed_min_delay: "Максимальная пауза должна быть больше минимальной",
     daily_limit_invalid: "Укажите корректный дневной лимит",
-    daily_limit_too_high: "Дневной лимит слишком высокий"
+    daily_limit_too_high: "Дневной лимит слишком высокий. Максимум — 50"
   };
   return labels[error] ?? error;
 }

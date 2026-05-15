@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   if (!Number.isFinite(dailyLimit) || dailyLimit < 1) {
     return Response.json({error: "daily_limit_invalid"}, {status: 400, headers: privateHeaders()});
   }
-  if (Number.isFinite(dailyLimit) && dailyLimit > 30) {
+  if (Number.isFinite(dailyLimit) && dailyLimit > 50) {
     return Response.json({error: "daily_limit_too_high"}, {status: 400, headers: privateHeaders()});
   }
   return Response.json(
