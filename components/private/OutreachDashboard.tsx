@@ -221,6 +221,7 @@ export function OutreachDashboard() {
     previewRecipients[0] ?? {company: "Тестовая компания", email: "example@example.ru"};
   const previewSubject = renderClientTemplate(templateDraft.subject, previewRecipient);
   const previewBody = renderClientTemplate(templateDraft.body, previewRecipient);
+  const isRunning = Boolean(settings?.enabled);
 
   return (
     <div className="mx-auto grid max-w-7xl gap-6">
@@ -246,14 +247,29 @@ export function OutreachDashboard() {
       <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-xl font-semibold">Управление</h2>
         <div className="flex flex-wrap gap-3">
-          <button className="btn-primary h-10 px-4 text-sm" type="button" onClick={() => control("start")}>
-            Запустить
+          <button
+            className={
+              isRunning
+                ? "h-10 rounded border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                : "btn-primary h-10 px-4 text-sm"
+            }
+            type="button"
+            aria-pressed={isRunning}
+            onClick={() => control("start")}
+          >
+            {isRunning ? "Работает" : "Запустить"}
           </button>
-          <button className="rounded border border-slate-300 px-4 py-2 text-sm" type="button" onClick={() => control("pause")}>
+          <button
+            className={
+              isRunning
+                ? "h-10 rounded border border-slate-300 bg-white px-4 text-sm transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
+                : "h-10 rounded border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+            }
+            type="button"
+            aria-pressed={!isRunning}
+            onClick={() => control("pause")}
+          >
             Пауза
-          </button>
-          <button className="rounded border border-slate-300 px-4 py-2 text-sm" type="button" onClick={refresh}>
-            Обновить предпросмотр
           </button>
         </div>
       </section>
@@ -298,6 +314,7 @@ export function OutreachDashboard() {
               name="min_delay_minutes"
               label="Мин. пауза, мин"
               type="number"
+              min={3}
               value={settingsDraft.min_delay_minutes}
               onChange={(value) => setSettingsDraft((current) => ({...current, min_delay_minutes: numberValue(value)}))}
             />
@@ -305,6 +322,7 @@ export function OutreachDashboard() {
               name="max_delay_minutes"
               label="Макс. пауза, мин"
               type="number"
+              min={3}
               value={settingsDraft.max_delay_minutes}
               onChange={(value) => setSettingsDraft((current) => ({...current, max_delay_minutes: numberValue(value)}))}
             />
@@ -312,6 +330,8 @@ export function OutreachDashboard() {
               name="daily_limit"
               label="Лимит в день"
               type="number"
+              min={1}
+              max={100}
               value={settingsDraft.daily_limit}
               onChange={(value) => setSettingsDraft((current) => ({...current, daily_limit: numberValue(value)}))}
             />
@@ -472,12 +492,16 @@ function Input({
   label,
   value,
   type = "text",
+  min,
+  max,
   onChange
 }: {
   name: string;
   label: string;
   value: string | number;
   type?: string;
+  min?: number;
+  max?: number;
   onChange: (value: string) => void;
 }) {
   return (
@@ -486,6 +510,8 @@ function Input({
       <input
         name={name}
         type={type}
+        min={min}
+        max={max}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="h-10 rounded border border-slate-200 px-3 text-slate-950"
@@ -711,9 +737,9 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     min_delay_invalid: "Укажите корректную минимальную паузу",
     min_delay_too_low: "Минимальная пауза слишком маленькая",
     max_delay_invalid: "Укажите корректную максимальную паузу",
-    max_delay_must_exceed_min_delay: "Максимальная пауза должна быть больше минимальной",
+    max_delay_must_exceed_min_delay: "Максимальная пауза не должна быть меньше минимальной",
     daily_limit_invalid: "Укажите корректный дневной лимит",
-    daily_limit_too_high: "Дневной лимит слишком высокий. Максимум — 50"
+    daily_limit_too_high: "Дневной лимит слишком высокий. Максимум — 100"
   };
   return labels[error] ?? error;
 }

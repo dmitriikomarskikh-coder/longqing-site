@@ -36,9 +36,18 @@ function isInsideSchedule() {
 
 function nextDelayIso() {
   const settings = getSettings();
-  const minutes =
-    settings.min_delay_minutes + Math.floor(Math.random() * (settings.max_delay_minutes - settings.min_delay_minutes + 1));
+  const minDelay = Math.max(3, settings.min_delay_minutes);
+  const maxDelay = Math.max(minDelay, settings.max_delay_minutes);
+  const minutes = minDelay + Math.floor(Math.random() * (maxDelay - minDelay + 1));
   return new Date(Date.now() + minutes * 60 * 1000).toISOString();
+}
+
+function todaySentCount() {
+  const today = new Intl.DateTimeFormat("en-CA", {timeZone: "Europe/Moscow"}).format(new Date());
+  const row = getOutreachDb()
+    .prepare("select count(*) as count from outreach_recipients where status = 'sent' and substr(last_sent_at, 1, 10) = ?")
+    .get(today) as {count: number};
+  return row.count;
 }
 
 async function sendRecipient(recipient: RecipientRow) {
@@ -113,6 +122,7 @@ async function tick() {
   if (!settings.require_sent_append || env("OUTREACH_REQUIRE_SENT_APPEND") !== "true") return;
   if (!isInsideSchedule()) return;
   if (settings.next_send_after && new Date(settings.next_send_after).getTime() > Date.now()) return;
+  if (todaySentCount() >= settings.daily_limit) return;
 
   const database = getOutreachDb();
   const recipient = database

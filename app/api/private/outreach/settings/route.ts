@@ -26,13 +26,13 @@ export async function POST(request: Request) {
   if (Number.isFinite(minDelay) && minDelay < 3) {
     return Response.json({error: "min_delay_too_low"}, {status: 400, headers: privateHeaders()});
   }
-  if (Number.isFinite(maxDelay) && Number.isFinite(minDelay) && maxDelay <= minDelay) {
+  if (Number.isFinite(maxDelay) && Number.isFinite(minDelay) && maxDelay < minDelay) {
     return Response.json({error: "max_delay_must_exceed_min_delay"}, {status: 400, headers: privateHeaders()});
   }
   if (!Number.isFinite(dailyLimit) || dailyLimit < 1) {
     return Response.json({error: "daily_limit_invalid"}, {status: 400, headers: privateHeaders()});
   }
-  if (Number.isFinite(dailyLimit) && dailyLimit > 50) {
+  if (Number.isFinite(dailyLimit) && dailyLimit > 100) {
     return Response.json({error: "daily_limit_too_high"}, {status: 400, headers: privateHeaders()});
   }
   return Response.json(
