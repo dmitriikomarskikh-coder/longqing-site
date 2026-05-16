@@ -145,21 +145,22 @@ function companyValue(recipient: OutreachTemplateRecipient) {
 
 function defaultStockTableText() {
   return [
-    "Номер | Name | Наименование | Кол-во",
+    "Номер | Наименование EN | Наименование RU | Кол-во",
     ...defaultTemplateStockRows.map((row) => row.join(" | "))
   ].join("\n");
 }
 
 function defaultStockTableHtml() {
+  const cellStyle = "border:1px solid #222;padding:6px 8px;line-height:18px;vertical-align:top;font-size:13px;";
   return [
-    '<table border="1" cellpadding="6" cellspacing="0">',
-    "<tr><th>Номер</th><th>Name</th><th>Наименование</th><th>Кол-во</th></tr>",
+    '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-spacing:0;margin:8px 0 12px 0;mso-table-lspace:0pt;mso-table-rspace:0pt;">',
+    `<tr><th style="${cellStyle}font-weight:700;">Номер</th><th style="${cellStyle}font-weight:700;">Наименование EN</th><th style="${cellStyle}font-weight:700;">Наименование RU</th><th style="${cellStyle}font-weight:700;">Кол-во</th></tr>`,
     ...defaultTemplateStockRows.map(
       ([partNumber, nameEn, nameRu, quantity]) =>
-        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(nameEn)}</td><td>${escapeHtml(nameRu)}</td><td>${escapeHtml(quantity)}</td></tr>`
+        `<tr><td style="${cellStyle}">${escapeHtml(partNumber)}</td><td style="${cellStyle}">${escapeHtml(nameEn)}</td><td style="${cellStyle}">${escapeHtml(nameRu)}</td><td style="${cellStyle}">${escapeHtml(quantity)}</td></tr>`
     ),
     "</table>"
-  ].join("\n");
+  ].join("");
 }
 
 export function renderOutreachTemplateText(template: OutreachStoredTemplate, recipient: OutreachTemplateRecipient) {
@@ -183,11 +184,41 @@ export function renderOutreachTemplateSubject(template: OutreachStoredTemplate, 
     .replace(/{{\s*email\s*}}/gi, recipient.email);
 }
 
+function trimBlankLinesStart(value: string) {
+  return value.replace(/^(?:[ \t]*\n)+/, "");
+}
+
+function trimBlankLinesEnd(value: string) {
+  return value.replace(/(?:\n[ \t]*)+$/, "");
+}
+
+function plainTextToHtml(value: string) {
+  const lines = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  return lines
+    .map((line) => {
+      if (!line.trim()) {
+        return '<div style="height:8px;line-height:8px;font-size:8px;">&nbsp;</div>';
+      }
+      return `<div style="margin:0 0 6px 0;line-height:18px;font-size:14px;">${escapeHtml(line)}</div>`;
+    })
+    .join("");
+}
+
 function textToHtml(value: string) {
-  const escaped = escapeHtml(value)
-    .replace(escapeHtml(defaultStockTableText()), defaultStockTableHtml())
-    .replace(/\n/g, "<br>");
-  return `<div>${escaped}</div>`;
+  const tableText = defaultStockTableText();
+  const tableIndex = value.indexOf(tableText);
+  if (tableIndex === -1) {
+    return `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;">${plainTextToHtml(value)}</div>`;
+  }
+  const before = trimBlankLinesEnd(value.slice(0, tableIndex));
+  const after = trimBlankLinesStart(value.slice(tableIndex + tableText.length));
+  return [
+    '<div style="font-family:Arial,Helvetica,sans-serif;color:#111;">',
+    plainTextToHtml(before),
+    defaultStockTableHtml(),
+    plainTextToHtml(after),
+    "</div>"
+  ].join("");
 }
 
 export function isValidOutreachEmail(email: string) {
@@ -219,7 +250,7 @@ export function renderOutreachEmail(
   const paragraphIndex = seed % outreachFirstParagraphs.length;
   const helloLine = recipient.contact_name ? `Здравствуйте, ${recipient.contact_name}.` : "Здравствуйте.";
   const stockTableText = [
-    "Номер | Name | Наименование | Кол-во",
+    "Номер | Наименование EN | Наименование RU | Кол-во",
     ...outreachStockRows.map((row) => row.join(" | "))
   ].join("\n");
   const text = [
