@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
+import {useRef} from "react";
 import type {Locale} from "@/i18n/routing";
 
 const disclaimer: Record<Locale, string> = {
@@ -12,19 +16,48 @@ const phoneDisplay = "+7 905 074 97 77";
 const phoneHref = "tel:+79050749777";
 
 export function Footer({locale}: {locale: Locale}) {
+  const router = useRouter();
+  const logoClicks = useRef(0);
+
+  const handleLogoClick = () => {
+    if (locale !== "en") {
+      return;
+    }
+    logoClicks.current += 1;
+    if (logoClicks.current >= 7) {
+      logoClicks.current = 0;
+      router.push("/en/private/auth");
+    }
+  };
+
+  const logo = (
+    <Image
+      src="/long_logo.png"
+      alt="LONGQING Trade"
+      width={1200}
+      height={243}
+      className="h-9 w-auto max-w-[190px] object-contain"
+    />
+  );
+
   return (
     <footer className="border-t border-border-dark bg-dark px-5 py-12">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1.4fr]">
         <div>
-          <Link href={`/${locale}`} className="inline-flex items-center">
-            <Image
-              src="/long_logo.png"
-              alt="LONGQING Trade"
-              width={1200}
-              height={243}
-              className="h-9 w-auto max-w-[190px] object-contain"
-            />
-          </Link>
+          {locale === "en" ? (
+            <button
+              aria-label="LONGQING Trade"
+              className="inline-flex items-center"
+              onClick={handleLogoClick}
+              type="button"
+            >
+              {logo}
+            </button>
+          ) : (
+            <Link href={`/${locale}`} className="inline-flex items-center">
+              {logo}
+            </Link>
+          )}
           <p className="mt-4 max-w-md text-sm leading-6 text-muted">
             ООО «Шаньдун Лунцин Интернэшнл Трейдинг»
           </p>
