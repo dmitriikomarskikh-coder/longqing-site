@@ -10,6 +10,7 @@ import {useRouter} from "next/navigation";
 import {useRef} from "react";
 import type {Locale} from "@/i18n/routing";
 import type {Geography} from "@/lib/types";
+import russiaExpandedRegions from "@/content/russia-expanded-regions.json";
 
 const geoUrl = "/maps/world-110m.json";
 
@@ -78,6 +79,24 @@ export function WorldMap({
                     fill="#2A2F35"
                     stroke="#0E1216"
                     strokeWidth={0.6}
+                    style={{
+                      default: {outline: "none"},
+                      hover: {fill: "#33404a", outline: "none"},
+                      pressed: {outline: "none"}
+                    }}
+                  />
+                ))
+              }
+            </Geographies>
+            <Geographies geography={russiaExpandedRegions}>
+              {({geographies}) =>
+                geographies.map((geo) => (
+                  <MapGeography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    fill="#2A2F35"
+                    stroke="#0E1216"
+                    strokeWidth={0.5}
                     style={{
                       default: {outline: "none"},
                       hover: {fill: "#33404a", outline: "none"},
