@@ -10,6 +10,7 @@ import {
   type OutreachTemplateSet,
   type OutreachTemplateVariant
 } from "@/lib/outreach/template";
+import {outreachEnv} from "@/lib/outreach/runtime-env";
 
 export type OutreachRecipientStatus =
   | "queued"
@@ -38,6 +39,25 @@ export type OutreachSettings = {
   require_sent_append: boolean;
   smtp_host: "smtp.timeweb.ru";
   smtp_user: "office@longqingtrade.com";
+};
+
+export type OutreachMailProvider = "timeweb" | "vk-workspace" | "custom";
+
+export type OutreachMailSettings = {
+  provider: OutreachMailProvider;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_secure: boolean;
+  smtp_user: string;
+  smtp_password: string;
+  smtp_from: string;
+  smtp_reply_to: string;
+  imap_host: string;
+  imap_port: number;
+  imap_secure: boolean;
+  imap_user: string;
+  imap_password: string;
+  updated_at: string | null;
 };
 
 export type RecipientRow = {
@@ -168,6 +188,12 @@ function initOutreachDb(database: Database.Database) {
       body text not null,
       updated_at text not null
     );
+
+    create table if not exists outreach_mail_settings (
+      key text primary key,
+      value_json text not null,
+      updated_at text not null
+    );
   `);
   migrateRecipientsTable(database);
   addColumnIfMissing(database, "outreach_recipients", "queue_position", "integer");
@@ -183,6 +209,137 @@ function initOutreachDb(database: Database.Database) {
       .prepare("insert or ignore into outreach_settings (key, value_json, updated_at) values (?, ?, ?)")
       .run(key, JSON.stringify(value), new Date().toISOString());
   }
+}
+
+function inferProvider(smtpHost: string): OutreachMailProvider {
+  if (smtpHost === "smtp.timeweb.ru") return "timeweb";
+  if (smtpHost === "smtp.mail.ru") return "vk-workspace";
+  return "custom";
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function normalizePort(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 && parsed <= 65535 ? parsed : fallback;
+}
+
+function normalizeProvider(value: unknown): OutreachMailProvider {
+  return value === "timeweb" || value === "vk-workspace" || value === "custom" ? value : "custom";
+}
+
+function defaultMailSettings(): OutreachMailSettings {
+  const smtpHost = outreachEnv("SMTP_HOST") || "smtp.timeweb.ru";
+  const smtpUser = outreachEnv("SMTP_USER") || "office@longqingtrade.com";
+  const smtpFrom = outreachEnv("SMTP_FROM") || `LONGQING TRADE <${smtpUser}>`;
+  const imapUser = outreachEnv("IMAP_USER") || smtpUser;
+  return {
+    provider: inferProvider(smtpHost),
+    smtp_host: smtpHost,
+    smtp_port: normalizePort(outreachEnv("SMTP_PORT"), 465),
+    smtp_secure: outreachEnv("SMTP_SECURE") !== "false",
+    smtp_user: smtpUser,
+    smtp_password: outreachEnv("SMTP_PASS"),
+    smtp_from: smtpFrom,
+    smtp_reply_to: outreachEnv("SMTP_REPLY_TO") || smtpUser,
+    imap_host: outreachEnv("IMAP_HOST") || (smtpHost === "smtp.mail.ru" ? "imap.mail.ru" : "imap.timeweb.ru"),
+    imap_port: normalizePort(outreachEnv("IMAP_PORT"), 993),
+    imap_secure: outreachEnv("IMAP_SECURE") !== "false",
+    imap_user: imapUser,
+    imap_password: outreachEnv("IMAP_PASS"),
+    updated_at: null
+  };
+}
+
+export function getOutreachMailSettings(): OutreachMailSettings {
+  const settings = defaultMailSettings();
+  const rows = getOutreachDb().prepare("select key, value_json, updated_at from outreach_mail_settings").all() as Array<{
+    key: keyof OutreachMailSettings;
+    value_json: string;
+    updated_at: string;
+  }>;
+  for (const row of rows) {
+    try {
+      settings[row.key] = JSON.parse(row.value_json) as never;
+      settings.updated_at = row.updated_at;
+    } catch {
+      // Ignore one broken setting and keep the env/default fallback.
+    }
+  }
+  settings.provider = normalizeProvider(settings.provider);
+  settings.smtp_port = normalizePort(settings.smtp_port, 465);
+  settings.smtp_secure = normalizeBoolean(settings.smtp_secure, true);
+  settings.imap_port = normalizePort(settings.imap_port, 993);
+  settings.imap_secure = normalizeBoolean(settings.imap_secure, true);
+  return settings;
+}
+
+export function publicOutreachMailSettings() {
+  const settings = getOutreachMailSettings();
+  return {
+    provider: settings.provider,
+    smtp_host: settings.smtp_host,
+    smtp_port: settings.smtp_port,
+    smtp_secure: settings.smtp_secure,
+    smtp_user: settings.smtp_user,
+    smtp_password_set: Boolean(settings.smtp_password),
+    smtp_from: settings.smtp_from,
+    smtp_reply_to: settings.smtp_reply_to,
+    imap_host: settings.imap_host,
+    imap_port: settings.imap_port,
+    imap_secure: settings.imap_secure,
+    imap_user: settings.imap_user,
+    imap_password_set: Boolean(settings.imap_password),
+    updated_at: settings.updated_at
+  };
+}
+
+export function saveOutreachMailSettings(input: Partial<OutreachMailSettings>) {
+  const current = getOutreachMailSettings();
+  const next: OutreachMailSettings = {
+    provider: normalizeProvider(input.provider ?? current.provider),
+    smtp_host: String(input.smtp_host ?? current.smtp_host).trim(),
+    smtp_port: normalizePort(input.smtp_port ?? current.smtp_port, current.smtp_port),
+    smtp_secure: normalizeBoolean(input.smtp_secure ?? current.smtp_secure, current.smtp_secure),
+    smtp_user: String(input.smtp_user ?? current.smtp_user).trim(),
+    smtp_password: input.smtp_password ? String(input.smtp_password) : current.smtp_password,
+    smtp_from: String(input.smtp_from ?? current.smtp_from).trim(),
+    smtp_reply_to: String(input.smtp_reply_to ?? current.smtp_reply_to).trim(),
+    imap_host: String(input.imap_host ?? current.imap_host).trim(),
+    imap_port: normalizePort(input.imap_port ?? current.imap_port, current.imap_port),
+    imap_secure: normalizeBoolean(input.imap_secure ?? current.imap_secure, current.imap_secure),
+    imap_user: String(input.imap_user ?? current.imap_user).trim(),
+    imap_password: input.imap_password ? String(input.imap_password) : current.imap_password,
+    updated_at: new Date().toISOString()
+  };
+  if (!next.smtp_host || !next.smtp_user || !next.smtp_from || !next.smtp_reply_to || !next.imap_host || !next.imap_user) {
+    throw new Error("mail_settings_required");
+  }
+  const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (localHosts.has(next.smtp_host.toLowerCase()) || localHosts.has(next.imap_host.toLowerCase())) {
+    throw new Error("mail_settings_localhost_forbidden");
+  }
+  const database = getOutreachDb();
+  const stmt = database.prepare(
+    "insert into outreach_mail_settings (key, value_json, updated_at) values (?, ?, ?) on conflict(key) do update set value_json=excluded.value_json, updated_at=excluded.updated_at"
+  );
+  const now = next.updated_at;
+  for (const [key, value] of Object.entries(next)) {
+    if (key === "updated_at") continue;
+    stmt.run(key, JSON.stringify(value), now);
+  }
+  addEvent("mail_settings_changed", null, null, {
+    provider: next.provider,
+    smtp_host: next.smtp_host,
+    smtp_user: next.smtp_user,
+    imap_host: next.imap_host,
+    imap_user: next.imap_user,
+    smtp_password_set: Boolean(next.smtp_password),
+    imap_password_set: Boolean(next.imap_password)
+  });
+  return publicOutreachMailSettings();
 }
 
 function addColumnIfMissing(database: Database.Database, table: string, column: string, definition: string) {

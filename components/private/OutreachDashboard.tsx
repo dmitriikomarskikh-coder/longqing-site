@@ -62,7 +62,49 @@ type TemplateState = {
 
 type SettingsDraft = Status["settings"];
 
+type MailProvider = "timeweb" | "vk-workspace" | "custom";
+
+type MailSettingsDraft = {
+  provider: MailProvider;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_secure: boolean;
+  smtp_user: string;
+  smtp_password: string;
+  smtp_password_set: boolean;
+  smtp_from: string;
+  smtp_reply_to: string;
+  imap_host: string;
+  imap_port: number;
+  imap_secure: boolean;
+  imap_user: string;
+  imap_password: string;
+  imap_password_set: boolean;
+  updated_at: string | null;
+};
+
 const templateVariants: TemplateVariantNumber[] = [1, 2, 3];
+
+const mailProviderPresets: Record<Exclude<MailProvider, "custom">, Pick<MailSettingsDraft, "provider" | "smtp_host" | "smtp_port" | "smtp_secure" | "imap_host" | "imap_port" | "imap_secure">> = {
+  timeweb: {
+    provider: "timeweb",
+    smtp_host: "smtp.timeweb.ru",
+    smtp_port: 465,
+    smtp_secure: true,
+    imap_host: "imap.timeweb.ru",
+    imap_port: 993,
+    imap_secure: true
+  },
+  "vk-workspace": {
+    provider: "vk-workspace",
+    smtp_host: "smtp.mail.ru",
+    smtp_port: 465,
+    smtp_secure: true,
+    imap_host: "imap.mail.ru",
+    imap_port: 993,
+    imap_secure: true
+  }
+};
 
 const emptyTemplateVariant: TemplateVariantState = {
   subject: "",
@@ -90,6 +132,25 @@ const defaultSettingsDraft: SettingsDraft = {
   next_send_after: null
 };
 
+const defaultMailSettingsDraft: MailSettingsDraft = {
+  provider: "timeweb",
+  smtp_host: "smtp.timeweb.ru",
+  smtp_port: 465,
+  smtp_secure: true,
+  smtp_user: "office@longqingtrade.com",
+  smtp_password: "",
+  smtp_password_set: false,
+  smtp_from: "LONGQING TRADE <office@longqingtrade.com>",
+  smtp_reply_to: "office@longqingtrade.com",
+  imap_host: "imap.timeweb.ru",
+  imap_port: 993,
+  imap_secure: true,
+  imap_user: "office@longqingtrade.com",
+  imap_password: "",
+  imap_password_set: false,
+  updated_at: null
+};
+
 export function OutreachDashboard() {
   const [status, setStatus] = useState<Status | null>(null);
   const [settingsDraft, setSettingsDraft] = useState<SettingsDraft>(defaultSettingsDraft);
@@ -98,6 +159,8 @@ export function OutreachDashboard() {
   const [errors, setErrors] = useState<Recipient[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [template, setTemplate] = useState<TemplateState | null>(null);
+  const [mailSettingsDraft, setMailSettingsDraft] = useState<MailSettingsDraft>(defaultMailSettingsDraft);
+  const [mailSettingsOpen, setMailSettingsOpen] = useState(false);
   const [templateDrafts, setTemplateDrafts] = useState<Record<TemplateVariantNumber, {subject: string; body: string}>>({
     1: {subject: "", body: ""},
     2: {subject: "", body: ""},
@@ -131,13 +194,14 @@ export function OutreachDashboard() {
   );
 
   async function refresh() {
-    const [nextStatus, nextQueue, nextSent, nextErrors, nextEvents, nextTemplate] = await Promise.all([
+    const [nextStatus, nextQueue, nextSent, nextErrors, nextEvents, nextTemplate, nextMailSettings] = await Promise.all([
       fetch("/api/private/outreach/status").then((response) => response.json()),
       fetch("/api/private/outreach/recipients?status=queued").then((response) => response.json()),
       fetch("/api/private/outreach/recipients?status=sent").then((response) => response.json()),
       fetch("/api/private/outreach/recipients?status=error").then((response) => response.json()),
       fetch("/api/private/outreach/events").then((response) => response.json()),
-      fetch("/api/private/outreach/template").then((response) => response.json())
+      fetch("/api/private/outreach/template").then((response) => response.json()),
+      fetch("/api/private/outreach/mail-settings").then((response) => response.json())
     ]);
     setStatus(nextStatus);
     setSettingsDraft(nextStatus.settings ?? defaultSettingsDraft);
@@ -151,6 +215,12 @@ export function OutreachDashboard() {
       1: {subject: nextVariants[1]?.subject ?? "", body: nextVariants[1]?.body ?? ""},
       2: {subject: nextVariants[2]?.subject ?? "", body: nextVariants[2]?.body ?? ""},
       3: {subject: nextVariants[3]?.subject ?? "", body: nextVariants[3]?.body ?? ""}
+    });
+    setMailSettingsDraft({
+      ...defaultMailSettingsDraft,
+      ...nextMailSettings,
+      smtp_password: "",
+      imap_password: ""
     });
   }
 
@@ -224,6 +294,40 @@ export function OutreachDashboard() {
     const body = await response.json();
     setMessage(response.ok ? "Настройки сохранены" : translateError(body.error));
     await refresh();
+  }
+
+  function setMailProvider(provider: MailProvider) {
+    setMailSettingsDraft((current) => {
+      const preset = provider === "custom" ? {} : mailProviderPresets[provider];
+      return {
+        ...current,
+        ...preset,
+        provider
+      };
+    });
+  }
+
+  async function saveMailSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const response = await fetch("/api/private/outreach/mail-settings", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(mailSettingsDraft)
+    });
+    const body = await parseJsonResponse(response);
+    if (response.ok) {
+      setMailSettingsDraft({
+        ...defaultMailSettingsDraft,
+        ...body,
+        smtp_password: "",
+        imap_password: ""
+      } as MailSettingsDraft);
+      setMessage("Настройки почты сохранены");
+      setMailSettingsOpen(false);
+      await refresh();
+    } else {
+      setMessage(translateError(body.error));
+    }
   }
 
   async function addManualRecipient(event: FormEvent<HTMLFormElement>) {
@@ -377,9 +481,14 @@ export function OutreachDashboard() {
           <h1 className="text-3xl font-semibold text-slate-950">Рассылка MTU</h1>
           <p className="mt-2 text-sm text-slate-600">Закрытая очередь B2B-рассылки. Отправка выполняется только фоновым серверным процессом.</p>
         </div>
-        <button className="rounded border border-slate-300 px-4 py-2 text-sm" onClick={logout} type="button">
-          Выйти
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button className="rounded border border-slate-300 bg-white px-4 py-2 text-sm transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700" onClick={() => setMailSettingsOpen(true)} type="button">
+            Настроить почту
+          </button>
+          <button className="rounded border border-slate-300 px-4 py-2 text-sm" onClick={logout} type="button">
+            Выйти
+          </button>
+        </div>
       </div>
 
       {message ? <p className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p> : null}
@@ -411,6 +520,16 @@ export function OutreachDashboard() {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {mailSettingsOpen ? (
+        <MailSettingsModal
+          draft={mailSettingsDraft}
+          onChange={setMailSettingsDraft}
+          onClose={() => setMailSettingsOpen(false)}
+          onProviderChange={setMailProvider}
+          onSubmit={saveMailSettings}
+        />
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
@@ -716,6 +835,124 @@ function Stat({label, value, tone = "default"}: {label: string; value: string; t
     <div className={tone === "danger" ? "rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"}>
       <p className={tone === "danger" ? "text-xs uppercase tracking-[0.12em] text-rose-500" : "text-xs uppercase tracking-[0.12em] text-slate-500"}>{label}</p>
       <p className={tone === "danger" ? "mt-2 text-xl font-semibold text-rose-800" : "mt-2 text-xl font-semibold text-slate-950"}>{value}</p>
+    </div>
+  );
+}
+
+function MailSettingsModal({
+  draft,
+  onChange,
+  onClose,
+  onProviderChange,
+  onSubmit
+}: {
+  draft: MailSettingsDraft;
+  onChange: (draft: MailSettingsDraft | ((current: MailSettingsDraft) => MailSettingsDraft)) => void;
+  onClose: () => void;
+  onProviderChange: (provider: MailProvider) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const update = <Key extends keyof MailSettingsDraft>(key: Key, value: MailSettingsDraft[Key]) => {
+    onChange((current) => ({...current, [key]: value}));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/35 p-4 backdrop-blur-sm">
+      <form onSubmit={onSubmit} className="grid max-h-[92vh] w-full max-w-4xl gap-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">Настроить почту</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Эти данные использует рассылка для SMTP-отправки и сохранения копии письма в папку «Отправленные» через IMAP.
+            </p>
+          </div>
+          <button className="rounded border border-slate-300 px-3 py-1.5 text-sm" type="button" onClick={onClose}>
+            Закрыть
+          </button>
+        </div>
+
+        <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          Для VK WorkSpace / Mail.ru обычно используются SMTP <code>smtp.mail.ru:465 SSL</code> и IMAP <code>imap.mail.ru:993 SSL</code>.
+          Пароль нужен для внешних приложений. Пустое поле пароля при сохранении оставляет уже сохранённый пароль.
+        </div>
+
+        <label className="grid gap-1 text-sm text-slate-600">
+          Провайдер
+          <select
+            className="h-10 rounded border border-slate-200 px-3 text-slate-950"
+            value={draft.provider}
+            onChange={(event) => onProviderChange(event.target.value as MailProvider)}
+          >
+            <option value="timeweb">Timeweb</option>
+            <option value="vk-workspace">VK WorkSpace / Mail.ru</option>
+            <option value="custom">Другой SMTP/IMAP</option>
+          </select>
+        </label>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section className="grid gap-3 rounded-xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-950">SMTP: отправка писем</h3>
+            <Input name="smtp_host" label="SMTP host" value={draft.smtp_host} onChange={(value) => update("smtp_host", value)} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input name="smtp_port" label="SMTP port" type="number" min={1} max={65535} value={draft.smtp_port} onChange={(value) => update("smtp_port", numberValue(value))} />
+              <label className="flex items-center gap-2 pt-7 text-sm text-slate-600">
+                <input type="checkbox" checked={draft.smtp_secure} onChange={(event) => update("smtp_secure", event.target.checked)} />
+                SSL/TLS
+              </label>
+            </div>
+            <Input name="smtp_user" label="SMTP user / логин ящика" value={draft.smtp_user} onChange={(value) => update("smtp_user", value)} />
+            <label className="grid gap-1 text-sm text-slate-600">
+              SMTP password / пароль приложения
+              <input
+                autoComplete="new-password"
+                className="h-10 rounded border border-slate-200 px-3 text-slate-950"
+                placeholder={draft.smtp_password_set ? "Сохранён. Введите новый только для замены" : "Введите пароль приложения"}
+                type="password"
+                value={draft.smtp_password}
+                onChange={(event) => update("smtp_password", event.target.value)}
+              />
+            </label>
+            <Input name="smtp_from" label="From" value={draft.smtp_from} onChange={(value) => update("smtp_from", value)} />
+            <Input name="smtp_reply_to" label="Reply-To" value={draft.smtp_reply_to} onChange={(value) => update("smtp_reply_to", value)} />
+          </section>
+
+          <section className="grid gap-3 rounded-xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-950">IMAP: копия в «Отправленные»</h3>
+            <Input name="imap_host" label="IMAP host" value={draft.imap_host} onChange={(value) => update("imap_host", value)} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input name="imap_port" label="IMAP port" type="number" min={1} max={65535} value={draft.imap_port} onChange={(value) => update("imap_port", numberValue(value))} />
+              <label className="flex items-center gap-2 pt-7 text-sm text-slate-600">
+                <input type="checkbox" checked={draft.imap_secure} onChange={(event) => update("imap_secure", event.target.checked)} />
+                SSL/TLS
+              </label>
+            </div>
+            <Input name="imap_user" label="IMAP user / логин ящика" value={draft.imap_user} onChange={(value) => update("imap_user", value)} />
+            <label className="grid gap-1 text-sm text-slate-600">
+              IMAP password / пароль приложения
+              <input
+                autoComplete="new-password"
+                className="h-10 rounded border border-slate-200 px-3 text-slate-950"
+                placeholder={draft.imap_password_set ? "Сохранён. Введите новый только для замены" : "Введите пароль приложения"}
+                type="password"
+                value={draft.imap_password}
+                onChange={(event) => update("imap_password", event.target.value)}
+              />
+            </label>
+            <p className="text-xs text-slate-500">
+              Если SMTP и IMAP используют один пароль приложения, можно указать одинаковый пароль в обоих полях.
+            </p>
+          </section>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button className="rounded border border-slate-300 px-4 py-2 text-sm" type="button" onClick={onClose}>
+            Отмена
+          </button>
+          <button className="btn-primary h-10 px-4 text-sm" type="submit">
+            Сохранить
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -1110,6 +1347,7 @@ function translateEventType(type: string) {
     recipient_reused: "Получатель возвращён в очередь",
     recipient_variant_changed: "Вариант письма изменён",
     recipient_deleted: "Запись удалена",
+    mail_settings_changed: "Настройки почты изменены",
     queue_reordered: "Порядок очереди изменён",
     auto_paused_queue_empty: "Автопауза: очередь закончилась",
     send_success: "Письмо отправлено",
@@ -1159,6 +1397,9 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     recipient_delete_sent_only: "Удалять вручную можно только записи из отправленных",
     send_now_queued_only: "Отправить сейчас можно только получателя из очереди",
     send_now_failed: `Не удалось отправить письмо сейчас${typeof context?.message === "string" ? `: ${context.message}` : ""}`,
+    mail_settings_required: "Заполните обязательные поля почты",
+    mail_settings_localhost_forbidden: "Нельзя использовать локальный SMTP/IMAP сервер",
+    mail_settings_save_failed: "Не удалось сохранить настройки почты",
     queue_order_required: "Не передан порядок очереди",
     queue_reorder_failed: "Не удалось изменить порядок очереди",
     outreach_send_disabled: "Отправка выключена в server env",

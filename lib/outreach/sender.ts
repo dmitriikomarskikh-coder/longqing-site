@@ -1,7 +1,7 @@
 import {Buffer} from "node:buffer";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
-import {getOutreachTemplate, type RecipientRow} from "./db";
+import {getOutreachMailSettings, getOutreachTemplate, type OutreachMailSettings, type RecipientRow} from "./db";
 import {loadOutreachEnv, outreachEnv} from "./runtime-env";
 import {renderOutreachEmail} from "./template";
 
@@ -12,36 +12,46 @@ function env(name: string) {
 loadOutreachEnv();
 
 export function assertOutreachSendEnv() {
-  const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "IMAP_HOST", "IMAP_USER", "IMAP_PASS"];
-  for (const name of required) {
-    if (!env(name)) {
+  const settings = getOutreachMailSettings();
+  const required = [
+    ["SMTP_HOST", settings.smtp_host],
+    ["SMTP_USER", settings.smtp_user],
+    ["SMTP_PASS", settings.smtp_password],
+    ["IMAP_HOST", settings.imap_host],
+    ["IMAP_USER", settings.imap_user],
+    ["IMAP_PASS", settings.imap_password]
+  ];
+  for (const [name, value] of required) {
+    if (!value) {
       throw new Error(`${name} is required`);
     }
   }
-  if (env("SMTP_HOST") !== "smtp.timeweb.ru") {
-    throw new Error("Only smtp.timeweb.ru is allowed");
+  const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (localHosts.has(settings.smtp_host.toLowerCase()) || localHosts.has(settings.imap_host.toLowerCase())) {
+    throw new Error("Local SMTP/IMAP hosts are forbidden");
   }
   if (env("OUTREACH_SEND_ENABLED") !== "true") {
     throw new Error("OUTREACH_SEND_ENABLED=true is required");
   }
+  return settings;
 }
 
 export async function sendOutreachRecipient(recipient: RecipientRow) {
-  assertOutreachSendEnv();
+  const settings = assertOutreachSendEnv();
   const content = renderOutreachEmail({company: recipient.company, email: recipient.email}, getOutreachTemplate(recipient.variant));
   const transporter = nodemailer.createTransport({
-    host: env("SMTP_HOST"),
-    port: Number(env("SMTP_PORT") || 465),
-    secure: env("SMTP_SECURE") !== "false",
-    auth: {user: env("SMTP_USER"), pass: env("SMTP_PASS")},
+    host: settings.smtp_host,
+    port: settings.smtp_port,
+    secure: settings.smtp_secure,
+    auth: {user: settings.smtp_user, pass: settings.smtp_password},
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000
   });
   const info = await transporter.sendMail({
-    from: env("SMTP_FROM") || "LONGQING TRADE <office@longqingtrade.com>",
+    from: settings.smtp_from,
     to: recipient.email,
-    replyTo: env("SMTP_REPLY_TO") || "office@longqingtrade.com",
+    replyTo: settings.smtp_reply_to,
     subject: content.subject,
     text: content.text,
     html: content.html,
@@ -52,16 +62,16 @@ export async function sendOutreachRecipient(recipient: RecipientRow) {
   });
   const messageId = typeof info.messageId === "string" ? info.messageId : "";
   const smtpResponse = typeof info.response === "string" ? info.response : "";
-  await appendSent(recipient.email, content.subject, content.text, content.html);
+  await appendSent(settings, recipient.email, content.subject, content.text, content.html);
   return {messageId, smtpResponse};
 }
 
-async function appendSent(to: string, subject: string, text: string, html: string) {
+async function appendSent(settings: OutreachMailSettings, to: string, subject: string, text: string, html: string) {
   const client = new ImapFlow({
-    host: env("IMAP_HOST"),
-    port: Number(env("IMAP_PORT") || 993),
-    secure: env("IMAP_SECURE") !== "false",
-    auth: {user: env("IMAP_USER"), pass: env("IMAP_PASS")},
+    host: settings.imap_host,
+    port: settings.imap_port,
+    secure: settings.imap_secure,
+    auth: {user: settings.imap_user, pass: settings.imap_password},
     logger: false
   });
   await client.connect();
@@ -72,7 +82,7 @@ async function appendSent(to: string, subject: string, text: string, html: strin
     if (!sent) throw new Error("Sent folder not found");
     const boundary = `longqing-${Date.now()}`;
     const raw = [
-      `From: ${env("SMTP_FROM") || "LONGQING TRADE <office@longqingtrade.com>"}`,
+      `From: ${settings.smtp_from}`,
       `To: ${to}`,
       `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
       `Date: ${new Date().toUTCString()}`,
