@@ -110,6 +110,8 @@ export function OutreachDashboard() {
   const [manualRecipient, setManualRecipient] = useState({company: "", email: ""});
   const [manualMessage, setManualMessage] = useState("");
   const [draggedQueueId, setDraggedQueueId] = useState<number | null>(null);
+  const [sendNowCandidate, setSendNowCandidate] = useState<Recipient | null>(null);
+  const [sendingNowId, setSendingNowId] = useState<number | null>(null);
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState("");
   const [moscowNow, setMoscowNow] = useState("");
@@ -303,6 +305,16 @@ export function OutreachDashboard() {
     }
   }
 
+  async function sendRecipientNow(row: Recipient) {
+    setSendingNowId(row.id);
+    setSendNowCandidate(null);
+    const response = await fetch(`/api/private/outreach/recipients/${row.id}/send-now`, {method: "POST"});
+    const body = await parseJsonResponse(response);
+    setSendingNowId(null);
+    setMessage(response.ok ? `Письмо отправлено: ${row.company} — ${row.email}` : translateError(body.error, body));
+    await refresh();
+  }
+
   async function deleteSentRecipient(row: Recipient) {
     if (!window.confirm(`Удалить запись об отправке ${row.email}? Это действие только для очистки тестовой истории.`)) {
       return;
@@ -371,6 +383,35 @@ export function OutreachDashboard() {
       </div>
 
       {message ? <p className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p> : null}
+
+      {sendNowCandidate ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm">
+          <div className="grid max-w-lg gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+            <p className="text-base text-slate-800">
+              Вы уверены, что хотите отправить письмо <span className="font-semibold">{sendNowCandidate.company}</span> на{" "}
+              <span className="font-semibold">{sendNowCandidate.email}</span> прямо сейчас?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                aria-label="Нет"
+                className="inline-flex h-11 w-11 items-center justify-center rounded border border-rose-200 bg-rose-50 text-xl font-semibold text-rose-700 transition hover:bg-rose-100"
+                type="button"
+                onClick={() => setSendNowCandidate(null)}
+              >
+                ×
+              </button>
+              <button
+                aria-label="Да"
+                className="inline-flex h-11 w-11 items-center justify-center rounded border border-emerald-200 bg-emerald-50 text-xl font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                type="button"
+                onClick={() => sendRecipientNow(sendNowCandidate)}
+              >
+                ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
         <Stat label="Статус" value={isUnlimited ? "В тестовом режиме" : (settings?.enabled ? "Запущена" : "На паузе")} tone={isUnlimited ? "danger" : "default"} />
@@ -562,6 +603,8 @@ export function OutreachDashboard() {
         onCancelEdit={() => setEditingId(null)}
         onExclude={excludeRecipient}
         onVariantChange={changeRecipientVariant}
+        onSendNow={setSendNowCandidate}
+        sendingNowId={sendingNowId}
       />
       <Table title="Отправлено" rows={sent} removable onRemove={deleteSentRecipient} />
       <Table
@@ -834,6 +877,8 @@ function Table({
   onCancelEdit,
   onExclude,
   onVariantChange,
+  onSendNow,
+  sendingNowId = null,
   removable = false,
   onRemove
 }: {
@@ -852,6 +897,8 @@ function Table({
   onCancelEdit?: () => void;
   onExclude?: (row: Recipient) => void;
   onVariantChange?: (row: Recipient, variant: TemplateVariantNumber) => void;
+  onSendNow?: (row: Recipient) => void;
+  sendingNowId?: number | null;
   removable?: boolean;
   onRemove?: (row: Recipient) => void;
 }) {
@@ -865,7 +912,7 @@ function Table({
               <th className="p-3">Компания</th>
               <th className="p-3">E-mail</th>
               <th className="p-3">Статус</th>
-              <th className="p-3">Вариант</th>
+              <th className="p-3">№</th>
               <th className="p-3">Совпадение</th>
               <th className="p-3">Обновлено</th>
               <th className="p-3">Ошибка</th>
@@ -930,8 +977,8 @@ function Table({
                         <button className="rounded border border-slate-300 px-3 py-1.5 text-xs" type="button" onClick={() => onStartEdit?.(row)}>
                           Редактировать
                         </button>
-                        <label className="flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs">
-                          Вариант:
+                        <label className="flex items-center rounded border border-slate-300 px-2 py-1 text-xs">
+                          <span className="sr-only">Вариант письма</span>
                           <select
                             className="bg-transparent"
                             value={row.variant ?? 1}
@@ -957,6 +1004,17 @@ function Table({
                 ) : null}
                 {queueMode ? (
                   <td className="p-3 text-right">
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        aria-label={`Отправить сейчас: ${row.company}`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-300 bg-white text-base text-slate-600 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 disabled:cursor-wait disabled:opacity-60"
+                        disabled={sendingNowId === row.id}
+                        type="button"
+                        title="Отправить письмо сейчас"
+                        onClick={() => onSendNow?.(row)}
+                      >
+                        {sendingNowId === row.id ? "…" : "✈"}
+                      </button>
                     <button
                       aria-label={`Перетащить: отправка ${row.queue_position ?? index + 1}`}
                       className="inline-flex h-9 w-9 cursor-grab items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
@@ -968,6 +1026,7 @@ function Table({
                     >
                       ☰
                     </button>
+                    </div>
                   </td>
                 ) : null}
               </tr>
@@ -1055,6 +1114,8 @@ function translateEventType(type: string) {
     auto_paused_queue_empty: "Автопауза: очередь закончилась",
     send_success: "Письмо отправлено",
     send_error: "Ошибка отправки",
+    send_now_success: "Письмо отправлено вручную",
+    send_now_error: "Ошибка ручной отправки",
     sent_append_failed: "Не удалось сохранить в Отправленные",
     do_not_contact: "Помечено как не контактировать",
     requeue: "Возвращено в очередь"
@@ -1096,6 +1157,8 @@ function translateError(error: unknown, context?: Record<string, unknown>) {
     recipient_not_found: "Получатель не найден",
     recipient_delete_failed: "Не удалось удалить запись",
     recipient_delete_sent_only: "Удалять вручную можно только записи из отправленных",
+    send_now_queued_only: "Отправить сейчас можно только получателя из очереди",
+    send_now_failed: `Не удалось отправить письмо сейчас${typeof context?.message === "string" ? `: ${context.message}` : ""}`,
     queue_order_required: "Не передан порядок очереди",
     queue_reorder_failed: "Не удалось изменить порядок очереди",
     outreach_send_disabled: "Отправка выключена в server env",
