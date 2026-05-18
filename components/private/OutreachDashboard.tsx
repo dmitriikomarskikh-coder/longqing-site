@@ -497,8 +497,9 @@ export function OutreachDashboard() {
               onChange={(value) => setSettingsDraft((current) => ({...current, daily_limit: numberValue(value)}))}
             />
           </div>
-          <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-            {formatSendCapacity(settingsDraft)}
+          <p className="grid gap-1 rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            <span>{formatSendCapacity(settingsDraft)}</span>
+            <span>{formatTodaySendCapacity(settingsDraft, status?.todaySent ?? 0)}</span>
           </p>
           <button className="btn-primary h-10 w-fit px-4 text-sm" type="submit">
             Сохранить настройки
@@ -776,6 +777,45 @@ function formatSendCapacity(settings: SettingsDraft) {
   const maximum = Math.min(dailyLimit, sendCountForWindow(windowMinutes, minDelay));
   const average = Math.round((minimum + maximum) / 2);
   return `Количество писем для отправки в указанное время по Москве: от ${minimum} до ${maximum} в сутки. Среднее значение: ${average}.`;
+}
+
+function moscowScheduleNow(date: Date) {
+  const moscow = new Date(date.toLocaleString("en-US", {timeZone: "Europe/Moscow"}));
+  return {
+    day: moscow.getDay(),
+    minutes: moscow.getHours() * 60 + moscow.getMinutes()
+  };
+}
+
+function formatTodaySendCapacity(settings: SettingsDraft, todaySent: number) {
+  const start = minutesFromTime(settings.allowed_time_start);
+  const end = minutesFromTime(settings.allowed_time_end);
+  const minDelay = Math.max(3, Number(settings.min_delay_minutes) || 0);
+  const maxDelay = Math.max(minDelay, Number(settings.max_delay_minutes) || minDelay);
+  if (start === null || end === null || end < start) {
+    return "Сегодня: проверьте начало и окончание окна по Москве.";
+  }
+
+  const {day, minutes} = moscowScheduleNow(new Date());
+  const dailyLimit = Math.max(1, Number(settings.daily_limit) || 1);
+  const remainingDailyLimit = Math.max(0, dailyLimit - Math.max(0, Number(todaySent) || 0));
+  let remainingWindowMinutes = 0;
+  let canSendToday = false;
+
+  if (settings.allowed_days.includes(day)) {
+    if (minutes < start) {
+      remainingWindowMinutes = end - start;
+      canSendToday = true;
+    } else if (minutes <= end) {
+      remainingWindowMinutes = end - minutes;
+      canSendToday = true;
+    }
+  }
+
+  const minimum = canSendToday ? Math.min(remainingDailyLimit, sendCountForWindow(remainingWindowMinutes, maxDelay)) : 0;
+  const maximum = canSendToday ? Math.min(remainingDailyLimit, sendCountForWindow(remainingWindowMinutes, minDelay)) : 0;
+  const average = Math.round((minimum + maximum) / 2);
+  return `Сегодня: при запуске сейчас успеет уйти от ${minimum} до ${maximum} писем. Среднее значение: ${average}.`;
 }
 
 function Table({
