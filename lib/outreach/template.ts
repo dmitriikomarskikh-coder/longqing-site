@@ -13,10 +13,14 @@ export type OutreachEmailContent = {
   templateVariant: string;
 };
 
+export type OutreachTemplateVariant = 1 | 2 | 3;
+
 export type OutreachStoredTemplate = {
   subject: string;
   body: string;
 };
+
+export type OutreachTemplateSet = Record<OutreachTemplateVariant, OutreachStoredTemplate>;
 
 export const outreachSubjectVariants = [
   "MTU parts: наличие на складе в Китае",
@@ -41,10 +45,11 @@ export const outreachStockRows = [
   ["EX52811400063", "Charge air cooler", "Охладитель наддувочного воздуха", "1"]
 ];
 
-export const defaultOutreachTemplate: OutreachStoredTemplate = {
-  subject: "Для {{Компания}} — запчасти MTU в наличии на складе в Китае",
-  body: [
-    "Здравствуйте, {{Компания}}.",
+export const defaultOutreachTemplates: OutreachTemplateSet = {
+  1: {
+    subject: "Для {{Компания}} — запчасти MTU в наличии на складе в Китае",
+    body: [
+    "Здравствуйте.",
     "",
     "Предлагаем запчасти MTU в наличии на складе в Китае.",
     "",
@@ -68,7 +73,66 @@ export const defaultOutreachTemplate: OutreachStoredTemplate = {
     "office@longqingtrade.com",
     "https://longqingtrade.com"
   ].join("\n")
+  },
+  2: {
+    subject: "Для {{Компания}} — запчасти MTU со склада в Китае",
+    body: [
+      "Здравствуйте.",
+      "",
+      "У нас на складе в Китае есть запчасти MTU в наличии.",
+      "",
+      "Форматы сотрудничества:",
+      "• продажа внутри Китая;",
+      "• доставка в Россию;",
+      "• логистика и растаможка под ключ;",
+      "• оплата — индивидуально.",
+      "",
+      "В наличии — позиции для ремонта и обслуживания двигателей и силовых установок MTU: поршни, гильзы, вкладыши, уплотнения, охлаждение, турбокомпрессоры, трубки высокого давления и другие детали.",
+      "",
+      "Список позиций:",
+      "{{СписокПозиций}}",
+      "",
+      "Если что-то из перечня актуально — пришлите номера и количество, подготовим предложение по цене, срокам и поставке.",
+      "",
+      "С уважением,",
+      "Комарских Дмитрий",
+      "+7 961 866 17 00",
+      "LONGQING TRADE",
+      "office@longqingtrade.com",
+      "https://longqingtrade.com"
+    ].join("\n")
+  },
+  3: {
+    subject: "Для {{Компания}} — наличие запчастей MTU в Китае",
+    body: [
+      "Здравствуйте.",
+      "",
+      "Есть в наличии запчасти MTU на складе в Китае.",
+      "",
+      "Возможные схемы работы:",
+      "• продажа внутри Китая;",
+      "• доставка в Россию;",
+      "• логистика и таможенное оформление под ключ;",
+      "• оплата обсуждается индивидуально.",
+      "",
+      "На складе — позиции для ремонта и обслуживания двигателей и силовых установок MTU: поршни, гильзы, вкладыши, уплотнения, элементы охлаждения, турбокомпрессоры, трубки высокого давления и прочие детали.",
+      "",
+      "Список позиций:",
+      "{{СписокПозиций}}",
+      "",
+      "Если какие-то номера актуальны — пришлите детали и количество, посчитаем цену, сроки и вариант поставки.",
+      "",
+      "С уважением,",
+      "Комарских Дмитрий",
+      "+7 961 866 17 00",
+      "LONGQING TRADE",
+      "office@longqingtrade.com",
+      "https://longqingtrade.com"
+    ].join("\n")
+  }
 };
+
+export const defaultOutreachTemplate = defaultOutreachTemplates[1];
 
 const defaultTemplateStockRows = [
   ["EX00008371", "Piston", "Поршень", "16"],
@@ -145,20 +209,21 @@ function companyValue(recipient: OutreachTemplateRecipient) {
 
 function defaultStockTableText() {
   return [
-    "Номер | Наименование EN | Наименование RU | Кол-во",
-    ...defaultTemplateStockRows.map((row) => row.join(" | "))
+    "Номер | Наименование | Кол-во",
+    ...defaultTemplateStockRows.map(([partNumber, nameEn, , quantity]) => [partNumber, nameEn, quantity].join(" | "))
   ].join("\n");
 }
 
 function defaultStockTableHtml() {
-  const cellStyle = "border:1px solid #222;padding:6px 8px;line-height:18px;vertical-align:top;font-size:13px;";
   return [
-    '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-spacing:0;margin:8px 0 12px 0;mso-table-lspace:0pt;mso-table-rspace:0pt;">',
-    `<tr><th style="${cellStyle}font-weight:700;">Номер</th><th style="${cellStyle}font-weight:700;">Наименование EN</th><th style="${cellStyle}font-weight:700;">Наименование RU</th><th style="${cellStyle}font-weight:700;">Кол-во</th></tr>`,
+    '<table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;border-color:#999;margin:8px 0 12px 0;">',
+    '<thead><tr style="background:#f0f0f0;"><th align="left">Номер</th><th align="left">Наименование</th><th align="right">Кол-во</th></tr></thead>',
+    "<tbody>",
     ...defaultTemplateStockRows.map(
       ([partNumber, nameEn, nameRu, quantity]) =>
-        `<tr><td style="${cellStyle}">${escapeHtml(partNumber)}</td><td style="${cellStyle}">${escapeHtml(nameEn)}</td><td style="${cellStyle}">${escapeHtml(nameRu)}</td><td style="${cellStyle}">${escapeHtml(quantity)}</td></tr>`
+        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(nameEn || nameRu)}</td><td align="right">${escapeHtml(quantity)}</td></tr>`
     ),
+    "</tbody>",
     "</table>"
   ].join("");
 }
@@ -169,6 +234,7 @@ export function renderOutreachTemplateText(template: OutreachStoredTemplate, rec
     [/{{\s*company\s*}}/gi, companyValue(recipient)],
     [/{{\s*email\s*}}/gi, recipient.email],
     [/{{\s*СписокПозиции\s*}}/gi, defaultStockTableText()],
+    [/{{\s*СписокПозиций\s*}}/gi, defaultStockTableText()],
     [/{{\s*stockList\s*}}/gi, defaultStockTableText()]
   ];
   return replacements.reduce(
@@ -250,8 +316,8 @@ export function renderOutreachEmail(
   const paragraphIndex = seed % outreachFirstParagraphs.length;
   const helloLine = recipient.contact_name ? `Здравствуйте, ${recipient.contact_name}.` : "Здравствуйте.";
   const stockTableText = [
-    "Номер | Наименование EN | Наименование RU | Кол-во",
-    ...outreachStockRows.map((row) => row.join(" | "))
+    "Номер | Наименование | Кол-во",
+    ...outreachStockRows.map(([partNumber, nameEn, , quantity]) => [partNumber, nameEn, quantity].join(" | "))
   ].join("\n");
   const text = [
     helloLine,

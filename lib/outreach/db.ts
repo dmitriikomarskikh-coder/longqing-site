@@ -3,7 +3,13 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import {outreachDbPath} from "@/lib/private/config";
-import {defaultOutreachTemplate, type OutreachStoredTemplate} from "@/lib/outreach/template";
+import {
+  defaultOutreachTemplate,
+  defaultOutreachTemplates,
+  type OutreachStoredTemplate,
+  type OutreachTemplateSet,
+  type OutreachTemplateVariant
+} from "@/lib/outreach/template";
 
 export type OutreachRecipientStatus =
   | "queued"
@@ -51,6 +57,8 @@ export type RecipientRow = {
   queue_position: number | null;
   history_match_type: "none" | "full" | "email" | "company";
   history_match_detail: string | null;
+  variant: OutreachTemplateVariant;
+  smtp_response: string | null;
 };
 
 export const defaultOutreachSettings: OutreachSettings = {
@@ -76,6 +84,16 @@ let db: Database.Database | null = null;
 
 export function emailHash(email: string) {
   return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+}
+
+export function recipientVariantForEmail(email: string): OutreachTemplateVariant {
+  const hex = crypto.createHash("md5").update(email.trim().toLowerCase()).digest("hex").slice(0, 8);
+  return ((Number.parseInt(hex, 16) % 3) + 1) as OutreachTemplateVariant;
+}
+
+function normalizeVariant(value: unknown): OutreachTemplateVariant {
+  const parsed = Number(value);
+  return parsed === 1 || parsed === 2 || parsed === 3 ? parsed : 1;
 }
 
 export function getOutreachDb() {
@@ -117,7 +135,9 @@ function initOutreachDb(database: Database.Database) {
       source_upload_id integer,
       queue_position integer,
       history_match_type text not null default 'none',
-      history_match_detail text
+      history_match_detail text,
+      variant integer not null default 1,
+      smtp_response text
     );
 
     create table if not exists outreach_events (
@@ -141,15 +161,23 @@ function initOutreachDb(database: Database.Database) {
       body text not null,
       updated_at text not null
     );
+
+    create table if not exists outreach_templates (
+      variant integer primary key,
+      subject text not null,
+      body text not null,
+      updated_at text not null
+    );
   `);
   migrateRecipientsTable(database);
   addColumnIfMissing(database, "outreach_recipients", "queue_position", "integer");
   addColumnIfMissing(database, "outreach_recipients", "history_match_type", "text not null default 'none'");
   addColumnIfMissing(database, "outreach_recipients", "history_match_detail", "text");
+  addColumnIfMissing(database, "outreach_recipients", "variant", "integer not null default 1");
+  addColumnIfMissing(database, "outreach_recipients", "smtp_response", "text");
+  backfillRecipientVariants(database);
   normalizeQueuePositions(database);
-  database
-    .prepare("insert or ignore into outreach_template (id, subject, body, updated_at) values (1, ?, ?, ?)")
-    .run(defaultOutreachTemplate.subject, defaultOutreachTemplate.body, new Date().toISOString());
+  migrateOutreachTemplates(database);
   for (const [key, value] of Object.entries(defaultOutreachSettings)) {
     database
       .prepare("insert or ignore into outreach_settings (key, value_json, updated_at) values (?, ?, ?)")
@@ -190,18 +218,47 @@ function migrateRecipientsTable(database: Database.Database) {
       source_upload_id integer,
       queue_position integer,
       history_match_type text not null default 'none',
-      history_match_detail text
+      history_match_detail text,
+      variant integer not null default 1,
+      smtp_response text
     );
     insert into outreach_recipients (
       id, company, email, email_hash, segment, city, note, status, created_at, updated_at,
-      last_sent_at, last_error, source_upload_id, queue_position, history_match_type, history_match_detail
+      last_sent_at, last_error, source_upload_id, queue_position, history_match_type, history_match_detail, variant, smtp_response
     )
     select
       id, company, email, email_hash, segment, city, note, status, created_at, updated_at,
-      last_sent_at, last_error, source_upload_id, null, 'none', null
+      last_sent_at, last_error, source_upload_id, null, 'none', null, 1, null
     from outreach_recipients_old_unique;
     drop table outreach_recipients_old_unique;
   `);
+}
+
+function backfillRecipientVariants(database: Database.Database) {
+  const rows = database
+    .prepare("select id, email, variant from outreach_recipients where variant not in (1, 2, 3) or variant is null")
+    .all() as Array<{id: number; email: string; variant: number | null}>;
+  const update = database.prepare("update outreach_recipients set variant = ? where id = ?");
+  database.transaction(() => {
+    for (const row of rows) {
+      update.run(recipientVariantForEmail(row.email), row.id);
+    }
+  })();
+}
+
+function migrateOutreachTemplates(database: Database.Database) {
+  const count = database.prepare("select count(*) as count from outreach_templates").get() as {count: number};
+  if (count.count > 0) {
+    return;
+  }
+  const legacy = database
+    .prepare("select subject, body from outreach_template where id = 1")
+    .get() as OutreachStoredTemplate | undefined;
+  const now = new Date().toISOString();
+  const insert = database.prepare("insert into outreach_templates (variant, subject, body, updated_at) values (?, ?, ?, ?)");
+  insert.run(1, legacy?.subject ?? defaultOutreachTemplates[1].subject, legacy?.body ?? defaultOutreachTemplates[1].body, now);
+  insert.run(2, defaultOutreachTemplates[2].subject, defaultOutreachTemplates[2].body, now);
+  insert.run(3, defaultOutreachTemplates[3].subject, defaultOutreachTemplates[3].body, now);
 }
 
 export function normalizeQueuePositions(database = getOutreachDb()) {
@@ -321,14 +378,31 @@ export function exitUnlimitedMode() {
   });
 }
 
-export function getOutreachTemplate(): OutreachStoredTemplate {
-  const row = getOutreachDb()
-    .prepare("select subject, body from outreach_template where id = 1")
-    .get() as OutreachStoredTemplate | undefined;
-  return row ?? defaultOutreachTemplate;
+export function getOutreachTemplates(): OutreachTemplateSet {
+  const rows = getOutreachDb()
+    .prepare("select variant, subject, body from outreach_templates order by variant")
+    .all() as Array<{variant: OutreachTemplateVariant; subject: string; body: string}>;
+  const templates = {...defaultOutreachTemplates};
+  for (const row of rows) {
+    templates[normalizeVariant(row.variant)] = {subject: row.subject, body: row.body};
+  }
+  return templates;
 }
 
-export function saveOutreachTemplate(template: OutreachStoredTemplate) {
+export function getOutreachTemplate(variant: OutreachTemplateVariant = 1): OutreachStoredTemplate {
+  const row = getOutreachDb()
+    .prepare("select subject, body from outreach_templates where variant = ?")
+    .get(normalizeVariant(variant)) as OutreachStoredTemplate | undefined;
+  if (row) {
+    return row;
+  }
+  const legacy = getOutreachDb()
+    .prepare("select subject, body from outreach_template where id = 1")
+    .get() as OutreachStoredTemplate | undefined;
+  return legacy ?? defaultOutreachTemplate;
+}
+
+export function saveOutreachTemplate(variant: OutreachTemplateVariant, template: OutreachStoredTemplate) {
   const next = {
     subject: template.subject.trim(),
     body: template.body.trim()
@@ -336,10 +410,10 @@ export function saveOutreachTemplate(template: OutreachStoredTemplate) {
   const now = new Date().toISOString();
   getOutreachDb()
     .prepare(
-      "insert into outreach_template (id, subject, body, updated_at) values (1, ?, ?, ?) on conflict(id) do update set subject=excluded.subject, body=excluded.body, updated_at=excluded.updated_at"
+      "insert into outreach_templates (variant, subject, body, updated_at) values (?, ?, ?, ?) on conflict(variant) do update set subject=excluded.subject, body=excluded.body, updated_at=excluded.updated_at"
     )
-    .run(next.subject, next.body, now);
-  addEvent("template_changed", null, null, {});
+    .run(normalizeVariant(variant), next.subject, next.body, now);
+  addEvent("template_changed", null, null, {variant: normalizeVariant(variant)});
   return next;
 }
 
@@ -390,6 +464,12 @@ export function updateRecipient(id: number, input: {company: string; email: stri
     throw new Error("recipient_fields_required");
   }
   const hash = emailHash(email);
+  const current = getOutreachDb()
+    .prepare("select email, variant from outreach_recipients where id = ?")
+    .get(id) as {email: string; variant: number} | undefined;
+  const variant = current && current.email.trim().toLowerCase() === email
+    ? normalizeVariant(current.variant)
+    : recipientVariantForEmail(email);
   const duplicate = getOutreachDb()
     .prepare("select id from outreach_recipients where id != ? and email_hash = ? and status != 'sent' limit 1")
     .get(id, hash) as {id: number} | undefined;
@@ -403,7 +483,22 @@ export function updateRecipient(id: number, input: {company: string; email: stri
       "update outreach_recipients set company = ?, email = ?, email_hash = ?, history_match_type = ?, history_match_detail = ?, updated_at = ? where id = ?"
     )
     .run(company, email, hash, match.type, match.detail, now, id);
-  addEvent("recipient_updated", id, null, {history_match_type: match.type});
+  getOutreachDb().prepare("update outreach_recipients set variant = ? where id = ?").run(variant, id);
+  addEvent("recipient_updated", id, null, {history_match_type: match.type, variant});
+  return {ok: true};
+}
+
+export function updateRecipientVariant(id: number, variant: OutreachTemplateVariant) {
+  const nextVariant = normalizeVariant(variant);
+  const database = getOutreachDb();
+  const row = database.prepare("select id from outreach_recipients where id = ?").get(id) as {id: number} | undefined;
+  if (!row) {
+    throw new Error("recipient_not_found");
+  }
+  database
+    .prepare("update outreach_recipients set variant = ?, updated_at = ? where id = ?")
+    .run(nextVariant, new Date().toISOString(), id);
+  addEvent("recipient_variant_changed", id, null, {variant: nextVariant});
   return {ok: true};
 }
 
@@ -440,11 +535,12 @@ export function createRecipient(input: {company: string; email: string}) {
     }
     const queuePosition =
       duplicate.status === "queued" && duplicate.queue_position ? duplicate.queue_position : nextQueuePosition(database);
+    const variant = recipientVariantForEmail(email);
     database
       .prepare(
-        "update outreach_recipients set company = ?, email = ?, email_hash = ?, status = 'queued', last_error = null, queue_position = ?, history_match_type = ?, history_match_detail = ?, updated_at = ? where id = ?"
+        "update outreach_recipients set company = ?, email = ?, email_hash = ?, status = 'queued', last_error = null, queue_position = ?, history_match_type = ?, history_match_detail = ?, variant = ?, updated_at = ? where id = ?"
       )
-      .run(company, email, hash, queuePosition, match.type, match.detail, now, duplicate.id);
+      .run(company, email, hash, queuePosition, match.type, match.detail, variant, now, duplicate.id);
     normalizeQueuePositions(database);
     addEvent("recipient_reused", duplicate.id, null, {previous_status: duplicate.status, history_match_type: match.type});
     return {
@@ -458,6 +554,7 @@ export function createRecipient(input: {company: string; email: string}) {
         queue_position: queuePosition,
         created_at: now,
         updated_at: now,
+        variant,
         history_match_type: match.type,
         history_match_detail: match.detail
       }
@@ -466,9 +563,9 @@ export function createRecipient(input: {company: string; email: string}) {
   const queuePosition = nextQueuePosition(database);
   const result = database
     .prepare(
-      "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, queue_position, history_match_type, history_match_detail) values (?, ?, ?, 'queued', ?, ?, ?, ?, ?)"
+      "insert into outreach_recipients (company, email, email_hash, status, created_at, updated_at, queue_position, history_match_type, history_match_detail, variant) values (?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?)"
     )
-    .run(company, email, hash, now, now, queuePosition, match.type, match.detail);
+    .run(company, email, hash, now, now, queuePosition, match.type, match.detail, recipientVariantForEmail(email));
   const id = Number(result.lastInsertRowid);
   addEvent("recipient_created", id, null, {history_match_type: match.type});
   return {
@@ -481,6 +578,7 @@ export function createRecipient(input: {company: string; email: string}) {
       queue_position: queuePosition,
       created_at: now,
       updated_at: now,
+      variant: recipientVariantForEmail(email),
       history_match_type: match.type,
       history_match_detail: match.detail
     }

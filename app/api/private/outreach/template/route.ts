@@ -1,19 +1,34 @@
 import {guardPrivateApi, privateHeaders} from "@/lib/private/api";
-import {getOutreachTemplate, saveOutreachTemplate} from "@/lib/outreach/db";
-import {renderOutreachEmail, scanForbiddenOutreachPhrases} from "@/lib/outreach/template";
+import {getOutreachTemplates, saveOutreachTemplate} from "@/lib/outreach/db";
+import {renderOutreachEmail, scanForbiddenOutreachPhrases, type OutreachTemplateVariant} from "@/lib/outreach/template";
+
+function normalizeVariant(value: unknown): OutreachTemplateVariant {
+  const parsed = Number(value);
+  return parsed === 1 || parsed === 2 || parsed === 3 ? parsed : 1;
+}
+
+function withPreviews() {
+  const templates = getOutreachTemplates();
+  return {
+    variants: {
+      1: {...templates[1], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[1])},
+      2: {...templates[2], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[2])},
+      3: {...templates[3], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[3])}
+    }
+  };
+}
 
 export async function GET() {
   const guard = await guardPrivateApi();
   if (guard) return guard;
-  const template = getOutreachTemplate();
-  const preview = renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, template);
-  return Response.json({...template, preview}, {headers: privateHeaders()});
+  return Response.json(withPreviews(), {headers: privateHeaders()});
 }
 
 export async function POST(request: Request) {
   const guard = await guardPrivateApi();
   if (guard) return guard;
-  const body = (await request.json()) as {subject?: string; body?: string};
+  const body = (await request.json()) as {variant?: unknown; subject?: string; body?: string};
+  const variant = normalizeVariant(body.variant);
   const template = {
     subject: body.subject?.trim() ?? "",
     body: body.body?.trim() ?? ""
@@ -25,7 +40,6 @@ export async function POST(request: Request) {
   if (forbidden.length > 0) {
     return Response.json({error: "template_forbidden_phrases", forbidden}, {status: 400, headers: privateHeaders()});
   }
-  const saved = saveOutreachTemplate(template);
-  const preview = renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, saved);
-  return Response.json({...saved, preview}, {headers: privateHeaders()});
+  saveOutreachTemplate(variant, template);
+  return Response.json(withPreviews(), {headers: privateHeaders()});
 }

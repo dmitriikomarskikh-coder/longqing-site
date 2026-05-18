@@ -296,6 +296,8 @@ function buildRawMessage(content: EmailContent, to: string) {
     `Subject: ${encodedHeader(content.subject)}`,
     `Date: ${new Date().toUTCString()}`,
     `Message-ID: <${crypto.randomUUID()}@longqingtrade.com>`,
+    "List-Unsubscribe: <mailto:office@longqingtrade.com?subject=unsubscribe>",
+    "Precedence: bulk",
     "MIME-Version: 1.0",
     `Content-Type: multipart/alternative; boundary="${boundary}"`
   ];
@@ -561,6 +563,10 @@ async function sendOne(mode: Mode, recipient: Recipient, sentMailbox?: SentMailb
     subject: content.subject,
     text: content.text,
     html: content.html,
+    headers: {
+      "List-Unsubscribe": "<mailto:office@longqingtrade.com?subject=unsubscribe>",
+      Precedence: "bulk"
+    },
     attachments
   });
   const sentAppendStatus = await appendSent(rawMessage, sentMailbox);

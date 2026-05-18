@@ -36,6 +36,7 @@ type Recipient = {
   queue_position: number | null;
   history_match_type: "none" | "full" | "email" | "company";
   history_match_detail: string | null;
+  variant: 1 | 2 | 3;
 };
 
 type EventRow = {
@@ -47,13 +48,33 @@ type EventRow = {
   detail_json: string;
 };
 
-type TemplateState = {
+type TemplateVariantNumber = 1 | 2 | 3;
+
+type TemplateVariantState = {
   subject: string;
   body: string;
   preview: {subject: string; text: string; html: string};
 };
 
+type TemplateState = {
+  variants: Record<TemplateVariantNumber, TemplateVariantState>;
+};
+
 type SettingsDraft = Status["settings"];
+
+const templateVariants: TemplateVariantNumber[] = [1, 2, 3];
+
+const emptyTemplateVariant: TemplateVariantState = {
+  subject: "",
+  body: "",
+  preview: {subject: "", text: "", html: ""}
+};
+
+const emptyTemplateVariants: Record<TemplateVariantNumber, TemplateVariantState> = {
+  1: emptyTemplateVariant,
+  2: emptyTemplateVariant,
+  3: emptyTemplateVariant
+};
 
 const defaultSettingsDraft: SettingsDraft = {
   enabled: false,
@@ -77,7 +98,12 @@ export function OutreachDashboard() {
   const [errors, setErrors] = useState<Recipient[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [template, setTemplate] = useState<TemplateState | null>(null);
-  const [templateDraft, setTemplateDraft] = useState({subject: "", body: ""});
+  const [templateDrafts, setTemplateDrafts] = useState<Record<TemplateVariantNumber, {subject: string; body: string}>>({
+    1: {subject: "", body: ""},
+    2: {subject: "", body: ""},
+    3: {subject: "", body: ""}
+  });
+  const [activeTemplateVariant, setActiveTemplateVariant] = useState<TemplateVariantNumber>(1);
   const [previewRecipientId, setPreviewRecipientId] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState({company: "", email: ""});
@@ -117,8 +143,13 @@ export function OutreachDashboard() {
     setSent(nextSent.recipients ?? []);
     setErrors(nextErrors.recipients ?? []);
     setEvents(nextEvents.events ?? []);
-    setTemplate(nextTemplate);
-    setTemplateDraft({subject: nextTemplate.subject ?? "", body: nextTemplate.body ?? ""});
+    const nextVariants = (nextTemplate.variants ?? emptyTemplateVariants) as TemplateState["variants"];
+    setTemplate({variants: nextVariants});
+    setTemplateDrafts({
+      1: {subject: nextVariants[1]?.subject ?? "", body: nextVariants[1]?.body ?? ""},
+      2: {subject: nextVariants[2]?.subject ?? "", body: nextVariants[2]?.body ?? ""},
+      3: {subject: nextVariants[3]?.subject ?? "", body: nextVariants[3]?.body ?? ""}
+    });
   }
 
   useEffect(() => {
@@ -214,13 +245,14 @@ export function OutreachDashboard() {
   }
 
   async function saveTemplate() {
+    const activeDraft = templateDrafts[activeTemplateVariant];
     const response = await fetch("/api/private/outreach/template", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(templateDraft)
+      body: JSON.stringify({variant: activeTemplateVariant, ...activeDraft})
     });
     const body = await parseJsonResponse(response);
-    setMessage(response.ok ? "Шаблон письма сохранён" : translateError(body.error, body));
+    setMessage(response.ok ? `Шаблон варианта ${activeTemplateVariant} сохранён` : translateError(body.error, body));
     if (response.ok) {
       setTemplate(body as TemplateState);
       await refresh();
@@ -242,6 +274,19 @@ export function OutreachDashboard() {
     setMessage(response.ok ? "Получатель обновлён" : translateError(body.error));
     if (response.ok) {
       setEditingId(null);
+      await refresh();
+    }
+  }
+
+  async function changeRecipientVariant(row: Recipient, variant: TemplateVariantNumber) {
+    const response = await fetch(`/api/private/outreach/recipients/${row.id}`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({variant})
+    });
+    const body = await parseJsonResponse(response);
+    setMessage(response.ok ? `Вариант изменён на ${variant}` : translateError(body.error));
+    if (response.ok) {
       await refresh();
     }
   }
@@ -307,8 +352,9 @@ export function OutreachDashboard() {
   const previewRecipient =
     previewRecipients.find((recipient) => String(recipient.id) === previewRecipientId) ??
     previewRecipients[0] ?? {company: "Тестовая компания", email: "example@example.ru"};
-  const previewSubject = renderClientTemplate(templateDraft.subject, previewRecipient);
-  const previewBody = renderClientTemplate(templateDraft.body, previewRecipient);
+  const activeTemplateDraft = templateDrafts[activeTemplateVariant];
+  const previewSubject = renderClientTemplate(activeTemplateDraft.subject, previewRecipient);
+  const previewBody = renderClientTemplate(activeTemplateDraft.body, previewRecipient);
   const isRunning = Boolean(settings?.enabled);
   const isUnlimited = Boolean(settings?.unlimited_mode);
 
@@ -514,6 +560,7 @@ export function OutreachDashboard() {
         onSaveEdit={saveRecipient}
         onCancelEdit={() => setEditingId(null)}
         onExclude={excludeRecipient}
+        onVariantChange={changeRecipientVariant}
       />
       <Table title="Отправлено" rows={sent} removable onRemove={deleteSentRecipient} />
       <Table
@@ -532,23 +579,49 @@ export function OutreachDashboard() {
       <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-xl font-semibold">Шаблон письма</h2>
         <p className="text-sm text-slate-600">
-          Доступные переменные: <code>{"{{Компания}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{СписокПозиции}}"}</code>.
+          Доступные переменные: <code>{"{{Компания}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{СписокПозиций}}"}</code>.
           Предпросмотр ниже обновляется по текущему тексту.
         </p>
+        <div className="flex flex-wrap gap-2">
+          {templateVariants.map((variant) => (
+            <button
+              key={variant}
+              type="button"
+              className={
+                activeTemplateVariant === variant
+                  ? "rounded border border-teal-500 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800"
+                  : "rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-teal-500 hover:bg-teal-50"
+              }
+              onClick={() => setActiveTemplateVariant(variant)}
+            >
+              Вариант {variant}
+            </button>
+          ))}
+        </div>
         <label className="grid gap-1 text-sm text-slate-600">
           Тема письма
           <input
             className="h-10 rounded border border-slate-200 px-3 text-slate-950"
-            value={templateDraft.subject}
-            onChange={(event) => setTemplateDraft((current) => ({...current, subject: event.target.value}))}
+            value={activeTemplateDraft.subject}
+            onChange={(event) =>
+              setTemplateDrafts((current) => ({
+                ...current,
+                [activeTemplateVariant]: {...current[activeTemplateVariant], subject: event.target.value}
+              }))
+            }
           />
         </label>
         <label className="grid gap-1 text-sm text-slate-600">
           Текст письма
           <textarea
             className="min-h-80 rounded border border-slate-200 p-3 font-mono text-sm text-slate-950"
-            value={templateDraft.body}
-            onChange={(event) => setTemplateDraft((current) => ({...current, body: event.target.value}))}
+            value={activeTemplateDraft.body}
+            onChange={(event) =>
+              setTemplateDrafts((current) => ({
+                ...current,
+                [activeTemplateVariant]: {...current[activeTemplateVariant], body: event.target.value}
+              }))
+            }
           />
         </label>
         <div className="flex flex-wrap items-end gap-3">
@@ -575,8 +648,10 @@ export function OutreachDashboard() {
           <p className="font-semibold text-slate-950">Тема: {previewSubject}</p>
           <pre className="max-h-96 overflow-auto whitespace-pre-wrap text-xs text-slate-700">{previewBody}</pre>
         </div>
-        {template?.preview ? (
-          <p className="text-xs text-slate-500">Сохранённый серверный предпросмотр: {template.preview.subject}</p>
+        {template?.variants?.[activeTemplateVariant]?.preview ? (
+          <p className="text-xs text-slate-500">
+            Сохранённый серверный предпросмотр варианта {activeTemplateVariant}: {template.variants[activeTemplateVariant]?.preview?.subject ?? ""}
+          </p>
         ) : null}
       </section>
 
@@ -718,6 +793,7 @@ function Table({
   onSaveEdit,
   onCancelEdit,
   onExclude,
+  onVariantChange,
   removable = false,
   onRemove
 }: {
@@ -735,6 +811,7 @@ function Table({
   onSaveEdit?: (row: Recipient) => void;
   onCancelEdit?: () => void;
   onExclude?: (row: Recipient) => void;
+  onVariantChange?: (row: Recipient, variant: TemplateVariantNumber) => void;
   removable?: boolean;
   onRemove?: (row: Recipient) => void;
 }) {
@@ -748,6 +825,7 @@ function Table({
               <th className="p-3">Компания</th>
               <th className="p-3">E-mail</th>
               <th className="p-3">Статус</th>
+              <th className="p-3">Вариант</th>
               <th className="p-3">Совпадение</th>
               <th className="p-3">Обновлено</th>
               <th className="p-3">Ошибка</th>
@@ -788,6 +866,7 @@ function Table({
                   )}
                 </td>
                 <td className="p-3">{translateRecipientStatus(row.status, queueMode ? index : undefined, row.queue_position)}</td>
+                <td className="p-3">{row.variant ?? 1}</td>
                 <td className="p-3 text-xs text-slate-600">
                   {row.history_match_type === "none" ? "—" : (
                     <span title={row.history_match_detail ?? undefined}>{translateHistoryMatch(row.history_match_type)}</span>
@@ -811,6 +890,20 @@ function Table({
                         <button className="rounded border border-slate-300 px-3 py-1.5 text-xs" type="button" onClick={() => onStartEdit?.(row)}>
                           Редактировать
                         </button>
+                        <label className="flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs">
+                          Вариант:
+                          <select
+                            className="bg-transparent"
+                            value={row.variant ?? 1}
+                            onChange={(event) => onVariantChange?.(row, Number(event.target.value) as TemplateVariantNumber)}
+                          >
+                            {templateVariants.map((variant) => (
+                              <option key={variant} value={variant}>
+                                {variant}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                         <button className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700" type="button" onClick={() => onExclude?.(row)}>
                           Удалить
                         </button>
@@ -853,6 +946,7 @@ function renderClientTemplate(value: string, recipient: {company: string; email:
     .replace(/{{\s*company\s*}}/gi, company)
     .replace(/{{\s*email\s*}}/gi, recipient.email)
     .replace(/{{\s*СписокПозиции\s*}}/gi, "[список позиций будет подставлен при отправке]")
+    .replace(/{{\s*СписокПозиций\s*}}/gi, "[список позиций будет подставлен при отправке]")
     .replace(/{{\s*stockList\s*}}/gi, "[список позиций будет подставлен при отправке]");
 }
 
@@ -915,6 +1009,7 @@ function translateEventType(type: string) {
     import: "Импорт",
     recipient_created: "Получатель добавлен",
     recipient_reused: "Получатель возвращён в очередь",
+    recipient_variant_changed: "Вариант письма изменён",
     recipient_deleted: "Запись удалена",
     queue_reordered: "Порядок очереди изменён",
     auto_paused_queue_empty: "Автопауза: очередь закончилась",

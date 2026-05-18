@@ -52,7 +52,7 @@ function todaySentCount() {
 
 async function sendRecipient(recipient: RecipientRow) {
   assertSendEnv();
-  const content = renderOutreachEmail({company: recipient.company, email: recipient.email}, getOutreachTemplate());
+  const content = renderOutreachEmail({company: recipient.company, email: recipient.email}, getOutreachTemplate(recipient.variant));
   const transporter = nodemailer.createTransport({
     host: env("SMTP_HOST"),
     port: Number(env("SMTP_PORT") || 465),
@@ -68,11 +68,16 @@ async function sendRecipient(recipient: RecipientRow) {
     replyTo: env("SMTP_REPLY_TO") || "office@longqingtrade.com",
     subject: content.subject,
     text: content.text,
-    html: content.html
+    html: content.html,
+    headers: {
+      "List-Unsubscribe": "<mailto:office@longqingtrade.com?subject=unsubscribe>",
+      Precedence: "bulk"
+    }
   });
   const messageId = typeof info.messageId === "string" ? info.messageId : "";
+  const smtpResponse = typeof info.response === "string" ? info.response : "";
   await appendSent(recipient.email, content.subject, content.text, content.html);
-  return messageId;
+  return {messageId, smtpResponse};
 }
 
 async function appendSent(to: string, subject: string, text: string, html: string) {
@@ -95,6 +100,8 @@ async function appendSent(to: string, subject: string, text: string, html: strin
       `To: ${to}`,
       `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
       `Date: ${new Date().toUTCString()}`,
+      "List-Unsubscribe: <mailto:office@longqingtrade.com?subject=unsubscribe>",
+      "Precedence: bulk",
       "MIME-Version: 1.0",
       `Content-Type: multipart/alternative; boundary="${boundary}"`,
       "",
@@ -139,11 +146,11 @@ async function tick() {
   }
 
   try {
-    const messageId = await sendRecipient(recipient);
+    const {messageId, smtpResponse} = await sendRecipient(recipient);
     const now = new Date().toISOString();
     database
-      .prepare("update outreach_recipients set status='sent', queue_position=null, last_sent_at=?, updated_at=?, last_error=null where id=?")
-      .run(now, now, recipient.id);
+      .prepare("update outreach_recipients set status='sent', queue_position=null, last_sent_at=?, updated_at=?, last_error=null, smtp_response=? where id=?")
+      .run(now, now, smtpResponse, recipient.id);
     saveSettings({next_send_after: nextDelayIso()});
     addEvent("send_success", recipient.id, messageId, {sent_append_status: "success"});
   } catch (error) {
