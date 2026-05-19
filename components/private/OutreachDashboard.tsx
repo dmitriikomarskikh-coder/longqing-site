@@ -164,6 +164,8 @@ export function OutreachDashboard() {
   const [queue, setQueue] = useState<Recipient[]>([]);
   const [sent, setSent] = useState<Recipient[]>([]);
   const [errors, setErrors] = useState<Recipient[]>([]);
+  const [queueExpanded, setQueueExpanded] = useState(false);
+  const [sentExpanded, setSentExpanded] = useState(false);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventsVisible, setEventsVisible] = useState(false);
   const [eventsExpanded, setEventsExpanded] = useState(false);
@@ -534,6 +536,8 @@ export function OutreachDashboard() {
   const previewBody = renderClientTemplate(activeTemplateDraft.body, previewRecipient, stockListText);
   const isRunning = Boolean(settings?.enabled);
   const isUnlimited = false;
+  const visibleQueue = queueExpanded ? queue : queue.slice(0, 20);
+  const visibleSent = sentExpanded ? sent : sent.slice(0, 20);
 
   return (
     <div className="mx-auto grid max-w-7xl gap-6">
@@ -746,7 +750,10 @@ export function OutreachDashboard() {
 
       <Table
         title="Очередь"
-        rows={queue}
+        rows={visibleQueue}
+        totalRows={queue.length}
+        expanded={queueExpanded}
+        onToggleExpanded={() => setQueueExpanded((current) => !current)}
         queueMode
         draggedRowId={draggedQueueId}
         dragOverRowId={dragOverQueueId}
@@ -766,7 +773,15 @@ export function OutreachDashboard() {
         onSendNow={setSendNowCandidate}
         sendingNowId={sendingNowId}
       />
-      <Table title="Отправлено" rows={sent} removable onRemove={deleteSentRecipient} />
+      <Table
+        title="Отправлено"
+        rows={visibleSent}
+        totalRows={sent.length}
+        expanded={sentExpanded}
+        onToggleExpanded={() => setSentExpanded((current) => !current)}
+        removable
+        onRemove={deleteSentRecipient}
+      />
       <Table
         title="Ошибки"
         rows={errors}
@@ -1220,6 +1235,9 @@ function formatTodaySendCapacity(settings: SettingsDraft, todaySent: number) {
 function Table({
   title,
   rows,
+  totalRows,
+  expanded = false,
+  onToggleExpanded,
   queueMode = false,
   draggedRowId = null,
   dragOverRowId = null,
@@ -1243,6 +1261,9 @@ function Table({
 }: {
   title: string;
   rows: Recipient[];
+  totalRows?: number;
+  expanded?: boolean;
+  onToggleExpanded?: () => void;
   queueMode?: boolean;
   draggedRowId?: number | null;
   dragOverRowId?: number | null;
@@ -1264,9 +1285,29 @@ function Table({
   removable?: boolean;
   onRemove?: (row: Recipient) => void;
 }) {
+  const hasHiddenRows = typeof totalRows === "number" && totalRows > rows.length;
+  const canCollapse = typeof totalRows === "number" && totalRows > 20 && expanded;
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <h2 className="border-b border-slate-200 p-5 text-xl font-semibold">{title}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
+        <div>
+          <h2 className="text-xl font-semibold">{title}</h2>
+          {typeof totalRows === "number" && totalRows > 20 ? (
+            <p className="mt-1 text-xs text-slate-500">
+              Показано {rows.length} из {totalRows}
+            </p>
+          ) : null}
+        </div>
+        {hasHiddenRows || canCollapse ? (
+          <button
+            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
+            type="button"
+            onClick={onToggleExpanded}
+          >
+            {expanded ? "Скрыть" : "Показать всё"}
+          </button>
+        ) : null}
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
