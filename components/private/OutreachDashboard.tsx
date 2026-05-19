@@ -1,7 +1,7 @@
 "use client";
 
-import type {DragEvent as ReactDragEvent, FormEvent} from "react";
-import {useCallback, useEffect, useMemo, useState} from "react";
+import type {FormEvent, PointerEvent as ReactPointerEvent} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {GripVertical, Pencil, Send, X} from "lucide-react";
 
 type Status = {
@@ -188,6 +188,9 @@ export function OutreachDashboard() {
   const [draggedQueueId, setDraggedQueueId] = useState<number | null>(null);
   const [dragOverQueueId, setDragOverQueueId] = useState<number | null>(null);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const queueRef = useRef<Recipient[]>([]);
+  const draggedQueueIdRef = useRef<number | null>(null);
+  const dragOverQueueIdRef = useRef<number | null>(null);
   const [sendNowCandidate, setSendNowCandidate] = useState<Recipient | null>(null);
   const [sendingNowId, setSendingNowId] = useState<number | null>(null);
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
@@ -255,18 +258,16 @@ export function OutreachDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!draggedQueueId) {
-      return undefined;
-    }
-    function handleDragOver(event: DragEvent) {
-      if (event.clientX === 0 && event.clientY === 0) {
-        return;
-      }
-      setDragPreview((current) => current ? {...current, x: event.clientX, y: event.clientY} : current);
-    }
-    window.addEventListener("dragover", handleDragOver);
-    return () => window.removeEventListener("dragover", handleDragOver);
+    queueRef.current = queue;
+  }, [queue]);
+
+  useEffect(() => {
+    draggedQueueIdRef.current = draggedQueueId;
   }, [draggedQueueId]);
+
+  useEffect(() => {
+    dragOverQueueIdRef.current = dragOverQueueId;
+  }, [dragOverQueueId]);
 
   async function control(action: "start" | "pause") {
     const response = await fetch(`/api/private/outreach/control/${action}`, {method: "POST"});
@@ -476,39 +477,44 @@ export function OutreachDashboard() {
     }
   }
 
-  function clearQueueDrag() {
+  const clearQueueDrag = useCallback(() => {
     setDraggedQueueId(null);
     setDragOverQueueId(null);
     setDragPreview(null);
-  }
+    draggedQueueIdRef.current = null;
+    dragOverQueueIdRef.current = null;
+  }, []);
 
-  function startQueueDrag(row: Recipient, event: ReactDragEvent<HTMLButtonElement>) {
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", String(row.id));
-    const dragImage = document.createElement("canvas");
-    dragImage.width = 1;
-    dragImage.height = 1;
-    event.dataTransfer.setDragImage(dragImage, 0, 0);
+  function startQueueDrag(row: Recipient, event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    draggedQueueIdRef.current = row.id;
+    dragOverQueueIdRef.current = null;
     setDraggedQueueId(row.id);
     setDragOverQueueId(null);
     setDragPreview({row, x: event.clientX, y: event.clientY});
   }
 
-  async function reorderQueue(targetId: number) {
-    if (!draggedQueueId || draggedQueueId === targetId) {
+  const reorderQueue = useCallback(async (sourceId: number, targetId: number) => {
+    if (!sourceId || sourceId === targetId) {
       clearQueueDrag();
       return;
     }
-    const sourceIndex = queue.findIndex((row) => row.id === draggedQueueId);
-    const targetIndex = queue.findIndex((row) => row.id === targetId);
+    const currentQueue = queueRef.current;
+    const sourceIndex = currentQueue.findIndex((row) => row.id === sourceId);
+    const targetIndex = currentQueue.findIndex((row) => row.id === targetId);
     if (sourceIndex < 0 || targetIndex < 0) {
       clearQueueDrag();
       return;
     }
-    const nextQueue = [...queue];
+    const nextQueue = [...currentQueue];
     const [moved] = nextQueue.splice(sourceIndex, 1);
     nextQueue.splice(targetIndex, 0, moved);
     const numberedQueue = nextQueue.map((row, index) => ({...row, queue_position: index + 1}));
+    queueRef.current = numberedQueue;
     setQueue(numberedQueue);
     clearQueueDrag();
 
@@ -525,7 +531,51 @@ export function OutreachDashboard() {
       setMessage(translateError(body.error));
       await refresh();
     }
-  }
+  }, [clearQueueDrag, refresh]);
+
+  useEffect(() => {
+    if (!draggedQueueId) return undefined;
+
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+
+    function handlePointerMove(event: PointerEvent) {
+      const currentDraggedId = draggedQueueIdRef.current;
+      if (!currentDraggedId) return;
+
+      setDragPreview((current) => current ? {...current, x: event.clientX, y: event.clientY} : current);
+      const targetId = queueRowIdFromPoint(event.clientX, event.clientY);
+      const nextTargetId = targetId && targetId !== currentDraggedId ? targetId : null;
+      setDragOverQueueId(nextTargetId);
+      dragOverQueueIdRef.current = nextTargetId;
+    }
+
+    function handlePointerUp() {
+      const currentDraggedId = draggedQueueIdRef.current;
+      const currentTargetId = dragOverQueueIdRef.current;
+      if (currentDraggedId && currentTargetId && currentDraggedId !== currentTargetId) {
+        void reorderQueue(currentDraggedId, currentTargetId);
+      } else {
+        clearQueueDrag();
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        clearQueueDrag();
+      }
+    }
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [clearQueueDrag, draggedQueueId, reorderQueue]);
 
   const previewRecipients = [...queue, ...sent, ...errors];
   const previewRecipient =
@@ -757,10 +807,7 @@ export function OutreachDashboard() {
         queueMode
         draggedRowId={draggedQueueId}
         dragOverRowId={dragOverQueueId}
-        onDragStart={startQueueDrag}
-        onDragEnter={setDragOverQueueId}
-        onDragEnd={clearQueueDrag}
-        onDropRow={reorderQueue}
+        onPointerDragStart={startQueueDrag}
         editable
         editingId={editingId}
         editDraft={editDraft}
@@ -971,6 +1018,13 @@ function QueueDragPreview({preview}: {preview: DragPreview}) {
       </div>
     </div>
   );
+}
+
+function queueRowIdFromPoint(x: number, y: number) {
+  const element = document.elementFromPoint(x, y);
+  const row = element?.closest("[data-queue-row-id]") as HTMLElement | null;
+  const id = Number(row?.dataset.queueRowId);
+  return Number.isInteger(id) && id > 0 ? id : null;
 }
 
 function MailSettingsModal({
@@ -1241,10 +1295,7 @@ function Table({
   queueMode = false,
   draggedRowId = null,
   dragOverRowId = null,
-  onDragStart,
-  onDragEnter,
-  onDragEnd,
-  onDropRow,
+  onPointerDragStart,
   editable = false,
   editingId = null,
   editDraft = {company: "", email: ""},
@@ -1267,10 +1318,7 @@ function Table({
   queueMode?: boolean;
   draggedRowId?: number | null;
   dragOverRowId?: number | null;
-  onDragStart?: (row: Recipient, event: ReactDragEvent<HTMLButtonElement>) => void;
-  onDragEnter?: (id: number | null) => void;
-  onDragEnd?: () => void;
-  onDropRow?: (id: number) => void;
+  onPointerDragStart?: (row: Recipient, event: ReactPointerEvent<HTMLButtonElement>) => void;
   editable?: boolean;
   editingId?: number | null;
   editDraft?: {company: string; email: string};
@@ -1327,14 +1375,12 @@ function Table({
             {rows.map((row, index) => (
               <tr
                 key={row.id}
+                data-queue-row-id={queueMode ? row.id : undefined}
                 className={`border-t border-slate-100 transition-all duration-200 ease-out ${row.history_match_type !== "none" ? "bg-rose-50" : ""} ${
                   draggedRowId === row.id ? "scale-[0.995] opacity-60" : ""
                 } ${
                   dragOverRowId === row.id && draggedRowId !== row.id ? "bg-teal-50 shadow-inner" : ""
                 }`}
-                onDragOver={queueMode ? (event) => event.preventDefault() : undefined}
-                onDragEnter={queueMode ? () => onDragEnter?.(row.id) : undefined}
-                onDrop={queueMode ? () => onDropRow?.(row.id) : undefined}
               >
                 <td className="p-3">
                   {editingId === row.id ? (
@@ -1452,10 +1498,8 @@ function Table({
                       </button>
                     <button
                       aria-label={`Перетащить: отправка ${row.queue_position ?? index + 1}`}
-                      className="inline-flex h-9 w-9 cursor-grab items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
-                      draggable
-                      onDragStart={(event) => onDragStart?.(row, event)}
-                      onDragEnd={onDragEnd}
+                      className="inline-flex h-9 w-9 touch-none cursor-grab select-none items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
+                      onPointerDown={(event) => onPointerDragStart?.(row, event)}
                       type="button"
                       title="Перетащить выше или ниже в очереди"
                     >
