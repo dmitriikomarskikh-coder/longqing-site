@@ -1364,8 +1364,8 @@ function Table({
               <th className="p-3">Совпадение</th>
               <th className="p-3">Обновлено</th>
               <th className="p-3">Ошибка</th>
-              {editable || removable ? <th className="p-3">Действия</th> : null}
-              {queueMode ? <th className="p-3 text-right">Порядок</th> : null}
+              {editable || removable ? <th className="w-[118px] p-3">Действия</th> : null}
+              {queueMode ? <th className="w-[162px] p-3 text-right">Порядок</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -1416,9 +1416,9 @@ function Table({
                 <td className="whitespace-nowrap p-3">{formatRuDateTime(row.updated_at)}</td>
                 <td className="p-3">{row.last_error ?? ""}</td>
                 {editable || removable ? (
-                  <td className="p-3">
+                  <td className="whitespace-nowrap p-3">
                     {editingId === row.id ? (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap items-center gap-2">
                         <button className="rounded bg-teal-600 px-3 py-1.5 text-xs font-medium text-white" type="button" onClick={() => onSaveEdit?.(row)}>
                           Сохранить
                         </button>
@@ -1427,7 +1427,7 @@ function Table({
                         </button>
                       </div>
                     ) : editable ? (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap items-center gap-2">
                         <button
                           aria-label={`Редактировать: ${row.company}`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
@@ -1437,10 +1437,10 @@ function Table({
                         >
                           <Pencil size={16} aria-hidden="true" />
                         </button>
-                        <label className="flex items-center rounded border border-slate-300 px-2 py-1 text-xs">
+                        <label className="flex h-9 w-14 items-center rounded border border-slate-300 px-2 py-1 text-xs">
                           <span className="sr-only">Вариант письма</span>
                           <select
-                            className="bg-transparent"
+                            className="w-full bg-transparent"
                             value={row.variant ?? 1}
                             onChange={(event) => onVariantChange?.(row, Number(event.target.value) as TemplateVariantNumber)}
                           >
@@ -1477,8 +1477,8 @@ function Table({
                   </td>
                 ) : null}
                 {queueMode ? (
-                  <td className="p-3 text-right">
-                    <div className="inline-flex items-center gap-2">
+                  <td className="whitespace-nowrap p-3 text-right">
+                    <div className="inline-flex flex-nowrap items-center gap-2">
                       <button
                         aria-label={`Удалить: ${row.company}`}
                         className="inline-flex h-9 w-9 items-center justify-center rounded border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100"
@@ -1498,15 +1498,15 @@ function Table({
                       >
                         {sendingNowId === row.id ? "…" : <Send size={17} aria-hidden="true" />}
                       </button>
-                    <button
-                      aria-label={`Перетащить: отправка ${row.queue_position ?? index + 1}`}
-                      className="inline-flex h-9 w-9 touch-none cursor-grab select-none items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
-                      onPointerDown={(event) => onPointerDragStart?.(row, event)}
-                      type="button"
-                      title="Перетащить выше или ниже в очереди"
-                    >
-                      <GripVertical size={17} aria-hidden="true" />
-                    </button>
+                      <button
+                        aria-label={`Перетащить: отправка ${row.queue_position ?? index + 1}`}
+                        className="inline-flex h-9 w-9 touch-none cursor-grab select-none items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
+                        onPointerDown={(event) => onPointerDragStart?.(row, event)}
+                        type="button"
+                        title="Перетащить выше или ниже в очереди"
+                      >
+                        <GripVertical size={17} aria-hidden="true" />
+                      </button>
                     </div>
                   </td>
                 ) : null}
