@@ -46,6 +46,11 @@ type DragPreview = {
   y: number;
 };
 
+type QueueDropTarget = {
+  id: number;
+  placement: "before" | "after";
+};
+
 type EventRow = {
   id: number;
   timestamp: string;
@@ -191,6 +196,7 @@ export function OutreachDashboard() {
   const queueRef = useRef<Recipient[]>([]);
   const draggedQueueIdRef = useRef<number | null>(null);
   const dragOverQueueIdRef = useRef<number | null>(null);
+  const dragOrderChangedRef = useRef(false);
   const [sendNowCandidate, setSendNowCandidate] = useState<Recipient | null>(null);
   const [sendingNowId, setSendingNowId] = useState<number | null>(null);
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
@@ -483,6 +489,7 @@ export function OutreachDashboard() {
     setDragPreview(null);
     draggedQueueIdRef.current = null;
     dragOverQueueIdRef.current = null;
+    dragOrderChangedRef.current = false;
   }, []);
 
   function startQueueDrag(row: Recipient, event: ReactPointerEvent<HTMLButtonElement>) {
@@ -493,39 +500,43 @@ export function OutreachDashboard() {
     event.currentTarget.setPointerCapture?.(event.pointerId);
     draggedQueueIdRef.current = row.id;
     dragOverQueueIdRef.current = null;
+    dragOrderChangedRef.current = false;
     setDraggedQueueId(row.id);
     setDragOverQueueId(null);
     setDragPreview({row, x: event.clientX, y: event.clientY});
   }
 
-  const reorderQueue = useCallback(async (sourceId: number, targetId: number) => {
-    if (!sourceId || sourceId === targetId) {
-      clearQueueDrag();
+  const previewQueueReorder = useCallback((sourceId: number, target: QueueDropTarget | null) => {
+    if (!sourceId || !target || sourceId === target.id) {
       return;
     }
     const currentQueue = queueRef.current;
-    const sourceIndex = currentQueue.findIndex((row) => row.id === sourceId);
-    const targetIndex = currentQueue.findIndex((row) => row.id === targetId);
-    if (sourceIndex < 0 || targetIndex < 0) {
+    const numberedQueue = moveQueueRow(currentQueue, sourceId, target);
+    if (sameQueueOrder(currentQueue, numberedQueue)) {
+      return;
+    }
+    queueRef.current = numberedQueue;
+    dragOverQueueIdRef.current = target.id;
+    dragOrderChangedRef.current = true;
+    setDragOverQueueId(target.id);
+    setQueue(numberedQueue);
+  }, []);
+
+  const persistQueueOrder = useCallback(async (orderedQueue: Recipient[]) => {
+    if (orderedQueue.length === 0) {
       clearQueueDrag();
       return;
     }
-    const nextQueue = [...currentQueue];
-    const [moved] = nextQueue.splice(sourceIndex, 1);
-    nextQueue.splice(targetIndex, 0, moved);
-    const numberedQueue = nextQueue.map((row, index) => ({...row, queue_position: index + 1}));
-    queueRef.current = numberedQueue;
-    setQueue(numberedQueue);
     clearQueueDrag();
 
     const response = await fetch("/api/private/outreach/recipients/reorder", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ids: numberedQueue.map((row) => row.id)})
+      body: JSON.stringify({ids: orderedQueue.map((row) => row.id)})
     });
     const body = await parseJsonResponse(response);
     if (response.ok) {
-      setQueue((body.recipients as Recipient[] | undefined) ?? numberedQueue);
+      setQueue((body.recipients as Recipient[] | undefined) ?? orderedQueue);
       setMessage("Порядок очереди обновлён");
     } else {
       setMessage(translateError(body.error));
@@ -544,17 +555,13 @@ export function OutreachDashboard() {
       if (!currentDraggedId) return;
 
       setDragPreview((current) => current ? {...current, x: event.clientX, y: event.clientY} : current);
-      const targetId = queueRowIdFromPoint(event.clientX, event.clientY);
-      const nextTargetId = targetId && targetId !== currentDraggedId ? targetId : null;
-      setDragOverQueueId(nextTargetId);
-      dragOverQueueIdRef.current = nextTargetId;
+      const target = queueDropTargetFromPoint(event.clientX, event.clientY, currentDraggedId);
+      previewQueueReorder(currentDraggedId, target);
     }
 
     function handlePointerUp() {
-      const currentDraggedId = draggedQueueIdRef.current;
-      const currentTargetId = dragOverQueueIdRef.current;
-      if (currentDraggedId && currentTargetId && currentDraggedId !== currentTargetId) {
-        void reorderQueue(currentDraggedId, currentTargetId);
+      if (dragOrderChangedRef.current) {
+        void persistQueueOrder(queueRef.current);
       } else {
         clearQueueDrag();
       }
@@ -575,7 +582,7 @@ export function OutreachDashboard() {
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [clearQueueDrag, draggedQueueId, reorderQueue]);
+  }, [clearQueueDrag, draggedQueueId, persistQueueOrder, previewQueueReorder]);
 
   const previewRecipients = [...queue, ...sent, ...errors];
   const previewRecipient =
@@ -1000,31 +1007,68 @@ function Stat({label, value, tone = "default"}: {label: string; value: string; t
 function QueueDragPreview({preview}: {preview: DragPreview}) {
   return (
     <div
-      className="pointer-events-none fixed z-[60] w-[min(560px,calc(100vw-32px))] rounded-xl border border-teal-300 bg-white/95 p-3 text-sm text-slate-950 shadow-2xl ring-4 ring-teal-100/70"
+      className="pointer-events-none fixed z-[60] w-[min(760px,calc(100vw-32px))] rounded-xl border border-teal-300 bg-white/95 p-3 text-sm text-slate-950 shadow-2xl ring-4 ring-teal-100/70"
       style={{
         left: preview.x,
         top: preview.y,
         transform: "translate(14px, 14px)"
       }}
     >
-      <div className="grid gap-1">
-        <div className="flex items-center justify-between gap-3">
-          <span className="truncate font-semibold">{preview.row.company}</span>
-          <span className="shrink-0 rounded bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700">
-            Отправка {preview.row.queue_position ?? ""}
-          </span>
-        </div>
-        <div className="truncate text-slate-600">{preview.row.email}</div>
+      <div className="grid grid-cols-[1.1fr_1.1fr_auto] items-center gap-3">
+        <span className="truncate font-semibold">{preview.row.company}</span>
+        <span className="truncate text-slate-600">{preview.row.email}</span>
+        <span className="shrink-0 rounded bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700">
+          Отправка {preview.row.queue_position ?? ""}
+        </span>
       </div>
     </div>
   );
 }
 
-function queueRowIdFromPoint(x: number, y: number) {
-  const element = document.elementFromPoint(x, y);
-  const row = element?.closest("[data-queue-row-id]") as HTMLElement | null;
-  const id = Number(row?.dataset.queueRowId);
-  return Number.isInteger(id) && id > 0 ? id : null;
+function queueDropTargetFromPoint(x: number, y: number, draggedId: number): QueueDropTarget | null {
+  const rows = Array.from(document.querySelectorAll("[data-queue-row-id]")) as HTMLElement[];
+  let lastTarget: QueueDropTarget | null = null;
+  for (const row of rows) {
+    const id = Number(row.dataset.queueRowId);
+    if (!Number.isInteger(id) || id <= 0 || id === draggedId) {
+      continue;
+    }
+    const rect = row.getBoundingClientRect();
+    if (x < rect.left || x > rect.right || y < rect.top - rect.height || y > rect.bottom + rect.height) {
+      continue;
+    }
+    lastTarget = {id, placement: "after"};
+    if (y < rect.top + rect.height / 2) {
+      return {id, placement: "before"};
+    }
+    if (y <= rect.bottom) {
+      return {id, placement: "after"};
+    }
+  }
+  return lastTarget;
+}
+
+function moveQueueRow(rows: Recipient[], sourceId: number, target: QueueDropTarget) {
+  const source = rows.find((row) => row.id === sourceId);
+  if (!source) {
+    return rows;
+  }
+  const remaining = rows.filter((row) => row.id !== sourceId);
+  const targetIndex = remaining.findIndex((row) => row.id === target.id);
+  if (targetIndex < 0) {
+    return rows;
+  }
+  const insertIndex = target.placement === "after" ? targetIndex + 1 : targetIndex;
+  const nextRows = [
+    ...remaining.slice(0, insertIndex),
+    source,
+    ...remaining.slice(insertIndex)
+  ];
+  return nextRows.map((row, index) => ({...row, queue_position: index + 1}));
+}
+
+function sameQueueOrder(left: Recipient[], right: Recipient[]) {
+  return left.length === right.length && left.every((row, index) => row.id === right[index]?.id);
 }
 
 function MailSettingsModal({
@@ -1377,7 +1421,7 @@ function Table({
                 key={row.id}
                 data-queue-row-id={queueMode ? row.id : undefined}
                 className={`border-t border-slate-100 transition-all duration-200 ease-out ${row.history_match_type !== "none" ? "bg-rose-50" : ""} ${
-                  draggedRowId === row.id ? "scale-[0.995] opacity-60" : ""
+                  draggedRowId === row.id ? "relative z-10 bg-teal-50 shadow-md ring-2 ring-inset ring-teal-300" : ""
                 } ${
                   dragOverRowId === row.id && draggedRowId !== row.id ? "bg-teal-50 shadow-inner" : ""
                 }`}
