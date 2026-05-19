@@ -2,6 +2,7 @@
 
 import type {FormEvent, PointerEvent as ReactPointerEvent} from "react";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {motion} from "framer-motion";
 import {GripVertical, Pencil, Send, X} from "lucide-react";
 
 type Status = {
@@ -38,12 +39,6 @@ type Recipient = {
   history_match_type: "none" | "full" | "email" | "company";
   history_match_detail: string | null;
   variant: 1 | 2 | 3;
-};
-
-type DragPreview = {
-  row: Recipient;
-  x: number;
-  y: number;
 };
 
 type QueueDropTarget = {
@@ -191,11 +186,8 @@ export function OutreachDashboard() {
   const [manualRecipient, setManualRecipient] = useState({company: "", email: ""});
   const [manualMessage, setManualMessage] = useState("");
   const [draggedQueueId, setDraggedQueueId] = useState<number | null>(null);
-  const [dragOverQueueId, setDragOverQueueId] = useState<number | null>(null);
-  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const queueRef = useRef<Recipient[]>([]);
   const draggedQueueIdRef = useRef<number | null>(null);
-  const dragOverQueueIdRef = useRef<number | null>(null);
   const dragOrderChangedRef = useRef(false);
   const [sendNowCandidate, setSendNowCandidate] = useState<Recipient | null>(null);
   const [sendingNowId, setSendingNowId] = useState<number | null>(null);
@@ -270,10 +262,6 @@ export function OutreachDashboard() {
   useEffect(() => {
     draggedQueueIdRef.current = draggedQueueId;
   }, [draggedQueueId]);
-
-  useEffect(() => {
-    dragOverQueueIdRef.current = dragOverQueueId;
-  }, [dragOverQueueId]);
 
   async function control(action: "start" | "pause") {
     const response = await fetch(`/api/private/outreach/control/${action}`, {method: "POST"});
@@ -485,10 +473,7 @@ export function OutreachDashboard() {
 
   const clearQueueDrag = useCallback(() => {
     setDraggedQueueId(null);
-    setDragOverQueueId(null);
-    setDragPreview(null);
     draggedQueueIdRef.current = null;
-    dragOverQueueIdRef.current = null;
     dragOrderChangedRef.current = false;
   }, []);
 
@@ -499,11 +484,8 @@ export function OutreachDashboard() {
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
     draggedQueueIdRef.current = row.id;
-    dragOverQueueIdRef.current = null;
     dragOrderChangedRef.current = false;
     setDraggedQueueId(row.id);
-    setDragOverQueueId(null);
-    setDragPreview({row, x: event.clientX, y: event.clientY});
   }
 
   const previewQueueReorder = useCallback((sourceId: number, target: QueueDropTarget | null) => {
@@ -516,9 +498,7 @@ export function OutreachDashboard() {
       return;
     }
     queueRef.current = numberedQueue;
-    dragOverQueueIdRef.current = target.id;
     dragOrderChangedRef.current = true;
-    setDragOverQueueId(target.id);
     setQueue(numberedQueue);
   }, []);
 
@@ -554,7 +534,6 @@ export function OutreachDashboard() {
       const currentDraggedId = draggedQueueIdRef.current;
       if (!currentDraggedId) return;
 
-      setDragPreview((current) => current ? {...current, x: event.clientX, y: event.clientY} : current);
       const target = queueDropTargetFromPoint(event.clientX, event.clientY, currentDraggedId);
       previewQueueReorder(currentDraggedId, target);
     }
@@ -614,7 +593,6 @@ export function OutreachDashboard() {
       </div>
 
       {message ? <p className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p> : null}
-      {dragPreview ? <QueueDragPreview preview={dragPreview} /> : null}
 
       {sendNowCandidate ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm">
@@ -813,7 +791,6 @@ export function OutreachDashboard() {
         onToggleExpanded={() => setQueueExpanded((current) => !current)}
         queueMode
         draggedRowId={draggedQueueId}
-        dragOverRowId={dragOverQueueId}
         onPointerDragStart={startQueueDrag}
         editable
         editingId={editingId}
@@ -1004,28 +981,7 @@ function Stat({label, value, tone = "default"}: {label: string; value: string; t
   );
 }
 
-function QueueDragPreview({preview}: {preview: DragPreview}) {
-  return (
-    <div
-      className="pointer-events-none fixed z-[60] w-[min(760px,calc(100vw-32px))] rounded-xl border border-teal-300 bg-white/95 p-3 text-sm text-slate-950 shadow-2xl ring-4 ring-teal-100/70"
-      style={{
-        left: preview.x,
-        top: preview.y,
-        transform: "translate(14px, 14px)"
-      }}
-    >
-      <div className="grid grid-cols-[1.1fr_1.1fr_auto] items-center gap-3">
-        <span className="truncate font-semibold">{preview.row.company}</span>
-        <span className="truncate text-slate-600">{preview.row.email}</span>
-        <span className="shrink-0 rounded bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700">
-          Отправка {preview.row.queue_position ?? ""}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function queueDropTargetFromPoint(x: number, y: number, draggedId: number): QueueDropTarget | null {
+function queueDropTargetFromPoint(_x: number, y: number, draggedId: number): QueueDropTarget | null {
   const rows = Array.from(document.querySelectorAll("[data-queue-row-id]")) as HTMLElement[];
   let lastTarget: QueueDropTarget | null = null;
   for (const row of rows) {
@@ -1034,15 +990,9 @@ function queueDropTargetFromPoint(x: number, y: number, draggedId: number): Queu
       continue;
     }
     const rect = row.getBoundingClientRect();
-    if (x < rect.left || x > rect.right || y < rect.top - rect.height || y > rect.bottom + rect.height) {
-      continue;
-    }
     lastTarget = {id, placement: "after"};
     if (y < rect.top + rect.height / 2) {
       return {id, placement: "before"};
-    }
-    if (y <= rect.bottom) {
-      return {id, placement: "after"};
     }
   }
   return lastTarget;
@@ -1338,7 +1288,6 @@ function Table({
   onToggleExpanded,
   queueMode = false,
   draggedRowId = null,
-  dragOverRowId = null,
   onPointerDragStart,
   editable = false,
   editingId = null,
@@ -1361,7 +1310,6 @@ function Table({
   onToggleExpanded?: () => void;
   queueMode?: boolean;
   draggedRowId?: number | null;
-  dragOverRowId?: number | null;
   onPointerDragStart?: (row: Recipient, event: ReactPointerEvent<HTMLButtonElement>) => void;
   editable?: boolean;
   editingId?: number | null;
@@ -1417,13 +1365,13 @@ function Table({
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr
+              <motion.tr
                 key={row.id}
+                layout="position"
+                transition={{layout: {duration: 0.22, ease: "easeOut"}}}
                 data-queue-row-id={queueMode ? row.id : undefined}
                 className={`border-t border-slate-100 transition-all duration-200 ease-out ${row.history_match_type !== "none" ? "bg-rose-50" : ""} ${
-                  draggedRowId === row.id ? "relative z-10 bg-teal-50 shadow-md ring-2 ring-inset ring-teal-300" : ""
-                } ${
-                  dragOverRowId === row.id && draggedRowId !== row.id ? "bg-teal-50 shadow-inner" : ""
+                  draggedRowId === row.id ? "relative z-10 bg-slate-100 shadow-sm ring-2 ring-inset ring-blue-200" : ""
                 }`}
               >
                 <td className="p-3">
@@ -1552,7 +1500,7 @@ function Table({
                     </div>
                   </td>
                 ) : null}
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
