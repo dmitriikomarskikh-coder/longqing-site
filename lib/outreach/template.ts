@@ -14,6 +14,7 @@ export type OutreachEmailContent = {
 };
 
 export type OutreachTemplateVariant = 1 | 2 | 3;
+export type OutreachStockRow = [string, string, string, string];
 
 export type OutreachStoredTemplate = {
   subject: string;
@@ -36,7 +37,7 @@ export const outreachFirstParagraphs = [
   "По MTU сейчас можно оперативно обработать запрос по складским позициям в Китае: ремонтные детали, элементы охлаждения и наддува, трубки высокого давления и другие позиции для двигателей и установок."
 ];
 
-export const outreachStockRows = [
+export const outreachStockRows: OutreachStockRow[] = [
   ["EX00008371", "Piston", "Поршень", "16"],
   ["5240114210", "Cylinder liner", "Гильза цилиндра", "32"],
   ["5550110259", "Cylinder liner seals", "Уплотнения гильзы", "64"],
@@ -134,7 +135,7 @@ export const defaultOutreachTemplates: OutreachTemplateSet = {
 
 export const defaultOutreachTemplate = defaultOutreachTemplates[1];
 
-const defaultTemplateStockRows = [
+const defaultTemplateStockRows: OutreachStockRow[] = [
   ["EX00008371", "Piston", "Поршень", "16"],
   ["5240114210", "Cylinder liner", "Гильза цилиндра", "32"],
   ["5550110259", "Cylinder liner seals", "Уплотнения гильзы", "64"],
@@ -207,35 +208,67 @@ function companyValue(recipient: OutreachTemplateRecipient) {
   return recipient.company.trim() || "коллеги";
 }
 
-function defaultStockTableText() {
+function normalizeStockRows(rows: OutreachStockRow[]) {
+  const normalized = rows
+    .map((row) => row.map((cell) => String(cell ?? "").trim()) as OutreachStockRow)
+    .filter(([partNumber, nameEn, nameRu, quantity]) => partNumber || nameEn || nameRu || quantity);
+  return normalized.length > 0 ? normalized : defaultTemplateStockRows;
+}
+
+export function defaultStockTableText(rows: OutreachStockRow[] = defaultTemplateStockRows) {
+  const normalizedRows = normalizeStockRows(rows);
   return [
-    "Номер | Наименование | Кол-во",
-    ...defaultTemplateStockRows.map(([partNumber, nameEn, , quantity]) => [partNumber, nameEn, quantity].join(" | "))
+    "Номер | Name | Наименование | Кол-во",
+    ...normalizedRows.map(([partNumber, nameEn, nameRu, quantity]) => [partNumber, nameEn, nameRu, quantity].join(" | "))
   ].join("\n");
 }
 
-function defaultStockTableHtml() {
+export function parseStockTableText(value: string): OutreachStockRow[] {
+  const rows = value
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line, index) => !(index === 0 && /^номер\s*\|/i.test(line)))
+    .map((line) => {
+      const cells = line.split("|").map((cell) => cell.trim());
+      if (cells.length >= 4) {
+        return [cells[0], cells[1], cells[2], cells.slice(3).join(" | ")] as OutreachStockRow;
+      }
+      if (cells.length === 3) {
+        return [cells[0], cells[1], "", cells[2]] as OutreachStockRow;
+      }
+      return null;
+    })
+    .filter((row): row is OutreachStockRow => Boolean(row && row[0] && row[3]));
+  return normalizeStockRows(rows);
+}
+
+function defaultStockTableHtml(rows: OutreachStockRow[] = defaultTemplateStockRows) {
+  const normalizedRows = normalizeStockRows(rows);
   return [
     '<table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;border-color:#999;margin:8px 0 12px 0;">',
-    '<thead><tr style="background:#f0f0f0;"><th align="left">Номер</th><th align="left">Наименование</th><th align="right">Кол-во</th></tr></thead>',
+    '<thead><tr style="background:#f0f0f0;"><th align="left">Номер</th><th align="left">Name</th><th align="left">Наименование</th><th align="right">Кол-во</th></tr></thead>',
     "<tbody>",
-    ...defaultTemplateStockRows.map(
+    ...normalizedRows.map(
       ([partNumber, nameEn, nameRu, quantity]) =>
-        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(nameEn || nameRu)}</td><td align="right">${escapeHtml(quantity)}</td></tr>`
+        `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(nameEn)}</td><td>${escapeHtml(nameRu)}</td><td align="right">${escapeHtml(quantity)}</td></tr>`
     ),
     "</tbody>",
     "</table>"
   ].join("");
 }
 
-export function renderOutreachTemplateText(template: OutreachStoredTemplate, recipient: OutreachTemplateRecipient) {
+export function renderOutreachTemplateText(template: OutreachStoredTemplate, recipient: OutreachTemplateRecipient, stockRows: OutreachStockRow[] = defaultTemplateStockRows) {
+  const stockTable = defaultStockTableText(stockRows);
   const replacements: Array<[RegExp, string]> = [
     [/{{\s*Компания\s*}}/gi, companyValue(recipient)],
     [/{{\s*company\s*}}/gi, companyValue(recipient)],
     [/{{\s*email\s*}}/gi, recipient.email],
-    [/{{\s*СписокПозиции\s*}}/gi, defaultStockTableText()],
-    [/{{\s*СписокПозиций\s*}}/gi, defaultStockTableText()],
-    [/{{\s*stockList\s*}}/gi, defaultStockTableText()]
+    [/{{\s*СписокПозиции\s*}}/gi, stockTable],
+    [/{{\s*СписокПозиций\s*}}/gi, stockTable],
+    [/{{\s*stockList\s*}}/gi, stockTable]
   ];
   return replacements.reduce(
     (current, [pattern, value]) => current.replace(pattern, value),
@@ -270,8 +303,8 @@ function plainTextToHtml(value: string) {
     .join("");
 }
 
-function textToHtml(value: string) {
-  const tableText = defaultStockTableText();
+function textToHtml(value: string, stockRows: OutreachStockRow[] = defaultTemplateStockRows) {
+  const tableText = defaultStockTableText(stockRows);
   const tableIndex = value.indexOf(tableText);
   if (tableIndex === -1) {
     return `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;">${plainTextToHtml(value)}</div>`;
@@ -281,7 +314,7 @@ function textToHtml(value: string) {
   return [
     '<div style="font-family:Arial,Helvetica,sans-serif;color:#111;">',
     plainTextToHtml(before),
-    defaultStockTableHtml(),
+    defaultStockTableHtml(stockRows),
     plainTextToHtml(after),
     "</div>"
   ].join("");
@@ -298,15 +331,17 @@ export function scanForbiddenOutreachPhrases(value: string) {
 
 export function renderOutreachEmail(
   recipient: OutreachTemplateRecipient,
-  template?: OutreachStoredTemplate
+  template?: OutreachStoredTemplate,
+  stockRows: OutreachStockRow[] = defaultTemplateStockRows
 ): OutreachEmailContent {
+  const normalizedStockRows = normalizeStockRows(stockRows);
   if (template) {
     const subject = renderOutreachTemplateSubject(template, recipient);
-    const text = renderOutreachTemplateText(template, recipient);
+    const text = renderOutreachTemplateText(template, recipient, normalizedStockRows);
     return {
       subject,
       text,
-      html: textToHtml(text),
+      html: textToHtml(text, normalizedStockRows),
       templateVariant: "custom-template"
     };
   }
@@ -316,8 +351,8 @@ export function renderOutreachEmail(
   const paragraphIndex = seed % outreachFirstParagraphs.length;
   const helloLine = recipient.contact_name ? `Здравствуйте, ${recipient.contact_name}.` : "Здравствуйте.";
   const stockTableText = [
-    "Номер | Наименование | Кол-во",
-    ...outreachStockRows.map(([partNumber, nameEn, , quantity]) => [partNumber, nameEn, quantity].join(" | "))
+    "Номер | Name | Наименование | Кол-во",
+    ...normalizedStockRows.map(([partNumber, nameEn, nameRu, quantity]) => [partNumber, nameEn, nameRu, quantity].join(" | "))
   ].join("\n");
   const text = [
     helloLine,
@@ -358,7 +393,7 @@ export function renderOutreachEmail(
     "<p>Ключевые позиции по наличию:</p>",
     '<table border="1" cellpadding="6" cellspacing="0">',
     "<tr><th>Номер</th><th>Name</th><th>Наименование</th><th>Кол-во</th></tr>",
-    ...outreachStockRows.map(
+    ...normalizedStockRows.map(
       ([partNumber, nameEn, nameRu, quantity]) =>
         `<tr><td>${escapeHtml(partNumber)}</td><td>${escapeHtml(nameEn)}</td><td>${escapeHtml(nameRu)}</td><td>${escapeHtml(quantity)}</td></tr>`
     ),

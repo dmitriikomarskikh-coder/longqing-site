@@ -1,7 +1,7 @@
 import {Buffer} from "node:buffer";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
-import {getOutreachMailSettings, getOutreachTemplate, type OutreachMailSettings, type RecipientRow} from "./db";
+import {getOutreachMailSettings, getOutreachStockRows, getOutreachTemplate, type OutreachMailSettings, type RecipientRow} from "./db";
 import {loadOutreachEnv, outreachEnv} from "./runtime-env";
 import {renderOutreachEmail} from "./template";
 
@@ -38,7 +38,11 @@ export function assertOutreachSendEnv() {
 
 export async function sendOutreachRecipient(recipient: RecipientRow) {
   const settings = assertOutreachSendEnv();
-  const content = renderOutreachEmail({company: recipient.company, email: recipient.email}, getOutreachTemplate(recipient.variant));
+  const content = renderOutreachEmail(
+    {company: recipient.company, email: recipient.email},
+    getOutreachTemplate(recipient.variant),
+    getOutreachStockRows()
+  );
   const transporter = nodemailer.createTransport({
     host: settings.smtp_host,
     port: settings.smtp_port,

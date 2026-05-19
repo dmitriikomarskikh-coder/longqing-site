@@ -1,5 +1,5 @@
 import {guardPrivateApi, privateHeaders} from "@/lib/private/api";
-import {getOutreachDb, getOutreachTemplate} from "@/lib/outreach/db";
+import {getOutreachDb, getOutreachStockRows, getOutreachTemplate} from "@/lib/outreach/db";
 import {renderOutreachEmail, type OutreachTemplateVariant} from "@/lib/outreach/template";
 
 function normalizeVariant(value: unknown): OutreachTemplateVariant {
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
         | undefined)
     : undefined;
   return Response.json(
-    renderOutreachEmail(row ?? {company: "Тестовая компания", email: "example@example.ru"}, getOutreachTemplate(variant)),
+    renderOutreachEmail(row ?? {company: "Тестовая компания", email: "example@example.ru"}, getOutreachTemplate(variant), getOutreachStockRows()),
     {headers: privateHeaders()}
   );
 }

@@ -28,7 +28,11 @@ export async function POST(_: Request, {params}: {params: Promise<{id: string}>}
       .prepare("update outreach_recipients set status='sent', queue_position=null, last_sent_at=?, updated_at=?, last_error=null, smtp_response=? where id=?")
       .run(now, now, smtpResponse, recipient.id);
     normalizeQueuePositions(database);
-    addEvent("send_now_success", recipient.id, messageId, {sent_append_status: "success"});
+    addEvent("send_now_success", recipient.id, messageId, {
+      company: recipient.company,
+      email: recipient.email,
+      sent_append_status: "success"
+    });
     return Response.json({ok: true, messageId}, {headers: privateHeaders()});
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 400) : "Send now failed";
@@ -36,7 +40,7 @@ export async function POST(_: Request, {params}: {params: Promise<{id: string}>}
       .prepare("update outreach_recipients set status='error', queue_position=null, last_error=?, updated_at=? where id=?")
       .run(message, new Date().toISOString(), recipient.id);
     normalizeQueuePositions(database);
-    addEvent("send_now_error", recipient.id, null, {error: message});
+    addEvent("send_now_error", recipient.id, null, {company: recipient.company, email: recipient.email, error: message});
     return Response.json({error: "send_now_failed", message}, {status: 500, headers: privateHeaders()});
   }
 }

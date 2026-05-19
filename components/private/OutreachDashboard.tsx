@@ -1,7 +1,8 @@
 "use client";
 
 import type {FormEvent} from "react";
-import {useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
+import {GripVertical, Pencil, Send, X} from "lucide-react";
 
 type Status = {
   settings: {
@@ -158,7 +159,11 @@ export function OutreachDashboard() {
   const [sent, setSent] = useState<Recipient[]>([]);
   const [errors, setErrors] = useState<Recipient[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
+  const [eventsVisible, setEventsVisible] = useState(false);
+  const [eventsExpanded, setEventsExpanded] = useState(false);
   const [template, setTemplate] = useState<TemplateState | null>(null);
+  const [stockListText, setStockListText] = useState("");
+  const [stockListOpen, setStockListOpen] = useState(false);
   const [mailSettingsDraft, setMailSettingsDraft] = useState<MailSettingsDraft>(defaultMailSettingsDraft);
   const [mailSettingsOpen, setMailSettingsOpen] = useState(false);
   const [templateDrafts, setTemplateDrafts] = useState<Record<TemplateVariantNumber, {subject: string; body: string}>>({
@@ -173,6 +178,7 @@ export function OutreachDashboard() {
   const [manualRecipient, setManualRecipient] = useState({company: "", email: ""});
   const [manualMessage, setManualMessage] = useState("");
   const [draggedQueueId, setDraggedQueueId] = useState<number | null>(null);
+  const [dragOverQueueId, setDragOverQueueId] = useState<number | null>(null);
   const [sendNowCandidate, setSendNowCandidate] = useState<Recipient | null>(null);
   const [sendingNowId, setSendingNowId] = useState<number | null>(null);
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
@@ -193,15 +199,16 @@ export function OutreachDashboard() {
     []
   );
 
-  async function refresh() {
-    const [nextStatus, nextQueue, nextSent, nextErrors, nextEvents, nextTemplate, nextMailSettings] = await Promise.all([
+  const refresh = useCallback(async () => {
+    const [nextStatus, nextQueue, nextSent, nextErrors, nextEvents, nextTemplate, nextMailSettings, nextStockList] = await Promise.all([
       fetch("/api/private/outreach/status").then((response) => response.json()),
       fetch("/api/private/outreach/recipients?status=queued").then((response) => response.json()),
       fetch("/api/private/outreach/recipients?status=sent").then((response) => response.json()),
       fetch("/api/private/outreach/recipients?status=error").then((response) => response.json()),
-      fetch("/api/private/outreach/events").then((response) => response.json()),
+      fetch(eventsExpanded ? "/api/private/outreach/events?all=1" : "/api/private/outreach/events").then((response) => response.json()),
       fetch("/api/private/outreach/template").then((response) => response.json()),
-      fetch("/api/private/outreach/mail-settings").then((response) => response.json())
+      fetch("/api/private/outreach/mail-settings").then((response) => response.json()),
+      fetch("/api/private/outreach/stock-list").then((response) => response.json())
     ]);
     setStatus(nextStatus);
     setSettingsDraft(nextStatus.settings ?? defaultSettingsDraft);
@@ -222,11 +229,12 @@ export function OutreachDashboard() {
       smtp_password: "",
       imap_password: ""
     });
-  }
+    setStockListText(typeof nextStockList.text === "string" ? nextStockList.text : "");
+  }, [eventsExpanded]);
 
   useEffect(() => {
     refresh().catch(() => setMessage("Не удалось загрузить данные панели"));
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     function updateMoscowClock() {
@@ -241,17 +249,6 @@ export function OutreachDashboard() {
     const response = await fetch(`/api/private/outreach/control/${action}`, {method: "POST"});
     const body = await response.json();
     setMessage(response.ok ? (action === "start" ? "Рассылка включена" : "Рассылка поставлена на паузу") : translateError(body.error));
-    await refresh();
-  }
-
-  async function toggleUnlimitedMode() {
-    const response = await fetch("/api/private/outreach/control/unlimited", {method: "POST"});
-    const body = await parseJsonResponse(response);
-    setMessage(
-      response.ok
-        ? ((body as Partial<SettingsDraft>).unlimited_mode ? "Тестовый режим включён" : "Рабочий режим: рассылка на паузе")
-        : translateError(body.error)
-    );
     await refresh();
   }
 
@@ -365,6 +362,31 @@ export function OutreachDashboard() {
     }
   }
 
+  async function saveStockList() {
+    const response = await fetch("/api/private/outreach/stock-list", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text: stockListText})
+    });
+    const body = await parseJsonResponse(response);
+    if (response.ok) {
+      setStockListText(String(body.text ?? stockListText));
+      setStockListOpen(false);
+      setMessage(`Список позиций сохранён: ${body.rows_count ?? 0} строк`);
+      await refresh();
+    } else {
+      setMessage(translateError(body.error));
+    }
+  }
+
+  async function showAllEvents() {
+    const response = await fetch("/api/private/outreach/events?all=1");
+    const body = await parseJsonResponse(response);
+    setEvents((body.events as EventRow[] | undefined) ?? []);
+    setEventsExpanded(true);
+    setEventsVisible(true);
+  }
+
   function startEdit(row: Recipient) {
     setEditingId(row.id);
     setEditDraft({company: row.company, email: row.email});
@@ -434,12 +456,14 @@ export function OutreachDashboard() {
   async function reorderQueue(targetId: number) {
     if (!draggedQueueId || draggedQueueId === targetId) {
       setDraggedQueueId(null);
+      setDragOverQueueId(null);
       return;
     }
     const sourceIndex = queue.findIndex((row) => row.id === draggedQueueId);
     const targetIndex = queue.findIndex((row) => row.id === targetId);
     if (sourceIndex < 0 || targetIndex < 0) {
       setDraggedQueueId(null);
+      setDragOverQueueId(null);
       return;
     }
     const nextQueue = [...queue];
@@ -448,6 +472,7 @@ export function OutreachDashboard() {
     const numberedQueue = nextQueue.map((row, index) => ({...row, queue_position: index + 1}));
     setQueue(numberedQueue);
     setDraggedQueueId(null);
+    setDragOverQueueId(null);
 
     const response = await fetch("/api/private/outreach/recipients/reorder", {
       method: "POST",
@@ -469,10 +494,10 @@ export function OutreachDashboard() {
     previewRecipients.find((recipient) => String(recipient.id) === previewRecipientId) ??
     previewRecipients[0] ?? {company: "Тестовая компания", email: "example@example.ru"};
   const activeTemplateDraft = templateDrafts[activeTemplateVariant];
-  const previewSubject = renderClientTemplate(activeTemplateDraft.subject, previewRecipient);
-  const previewBody = renderClientTemplate(activeTemplateDraft.body, previewRecipient);
+  const previewSubject = renderClientTemplate(activeTemplateDraft.subject, previewRecipient, stockListText);
+  const previewBody = renderClientTemplate(activeTemplateDraft.body, previewRecipient, stockListText);
   const isRunning = Boolean(settings?.enabled);
-  const isUnlimited = Boolean(settings?.unlimited_mode);
+  const isUnlimited = false;
 
   return (
     <div className="mx-auto grid max-w-7xl gap-6">
@@ -566,15 +591,6 @@ export function OutreachDashboard() {
           >
             Пауза
           </button>
-          {isUnlimited ? (
-            <button
-              className="h-10 rounded border border-slate-300 bg-white px-4 text-sm transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
-              type="button"
-              onClick={toggleUnlimitedMode}
-            >
-              Перейти в рабочий режим
-            </button>
-          ) : null}
         </div>
       </section>
 
@@ -582,21 +598,6 @@ export function OutreachDashboard() {
         <form onSubmit={saveSettings} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Настройки</h2>
-            <div className="grid justify-items-end gap-1">
-              <button
-                className={
-                  isUnlimited
-                    ? "h-10 rounded border border-red-700 bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700"
-                    : "h-10 rounded border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
-                }
-                type="button"
-                aria-pressed={isUnlimited}
-                onClick={toggleUnlimitedMode}
-              >
-                Тест
-              </button>
-              <p className="text-xs text-rose-700">Отправка писем начнётся сразу.</p>
-            </div>
           </div>
           <div className="flex flex-wrap gap-3">
             {weekdays.map((day) => (
@@ -649,7 +650,7 @@ export function OutreachDashboard() {
             />
             <Input
               name="daily_limit"
-              label="Лимит в день"
+              label={`Лимит в день. Сейчас — ${settings?.daily_limit ?? settingsDraft.daily_limit}`}
               type="number"
               min={1}
               max={100}
@@ -711,7 +712,9 @@ export function OutreachDashboard() {
         rows={queue}
         queueMode
         draggedRowId={draggedQueueId}
+        dragOverRowId={dragOverQueueId}
         onDragStart={setDraggedQueueId}
+        onDragEnter={setDragOverQueueId}
         onDropRow={reorderQueue}
         editable
         editingId={editingId}
@@ -745,6 +748,35 @@ export function OutreachDashboard() {
           Доступные переменные: <code>{"{{Компания}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{СписокПозиций}}"}</code>.
           Предпросмотр ниже обновляется по текущему тексту.
         </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-teal-500 hover:bg-teal-50"
+            type="button"
+            onClick={() => setStockListOpen((current) => !current)}
+          >
+            Редактировать список позиций
+          </button>
+        </div>
+        {stockListOpen ? (
+          <div className="grid gap-3 rounded border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm text-slate-600">
+              Формат: <code>Номер | Name | Наименование | Кол-во</code>. Этот список подставляется вместо <code>{"{{СписокПозиций}}"}</code> во все варианты письма.
+            </p>
+            <textarea
+              className="min-h-72 rounded border border-slate-200 bg-white p-3 font-mono text-sm text-slate-950"
+              value={stockListText}
+              onChange={(event) => setStockListText(event.target.value)}
+            />
+            <div className="flex flex-wrap gap-2">
+              <button className="btn-primary h-10 px-4 text-sm" type="button" onClick={saveStockList}>
+                Сохранить список
+              </button>
+              <button className="rounded border border-slate-300 bg-white px-4 py-2 text-sm" type="button" onClick={() => setStockListOpen(false)}>
+                Закрыть
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           {templateVariants.map((variant) => (
             <button
@@ -819,12 +851,38 @@ export function OutreachDashboard() {
       </section>
 
       <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-xl font-semibold">Журнал событий</h2>
-        <div className="grid gap-2 text-xs text-slate-600">
-          {events.map((event) => (
-            <p key={event.id}>{event.timestamp} — {translateEventType(event.type)} — {event.message_id ?? ""}</p>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Журнал событий</h2>
+          {eventsVisible ? (
+            <div className="flex flex-wrap gap-2">
+              {!eventsExpanded ? (
+                <button className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm" type="button" onClick={showAllEvents}>
+                  Показать все
+                </button>
+              ) : null}
+              <button className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm" type="button" onClick={() => setEventsVisible(false)}>
+                Скрыть
+              </button>
+            </div>
+          ) : (
+            <button className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm" type="button" onClick={() => setEventsVisible(true)}>
+              Показать
+            </button>
+          )}
         </div>
+        {eventsVisible ? (
+          <div className="grid max-h-[520px] gap-2 overflow-auto text-xs text-slate-600">
+            {events.map((event) => (
+              <p key={event.id}>
+                {formatRuDateTime(event.timestamp)} — {translateEventType(event.type)}
+                {formatEventDetail(event) ? ` — ${formatEventDetail(event)}` : ""}
+                {event.message_id ? ` — ${event.message_id}` : ""}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">По умолчанию скрыт. Показываются последние 50 событий, полная история доступна кнопкой «Показать все».</p>
+        )}
       </section>
     </div>
   );
@@ -1103,7 +1161,9 @@ function Table({
   rows,
   queueMode = false,
   draggedRowId = null,
+  dragOverRowId = null,
   onDragStart,
+  onDragEnter,
   onDropRow,
   editable = false,
   editingId = null,
@@ -1123,7 +1183,9 @@ function Table({
   rows: Recipient[];
   queueMode?: boolean;
   draggedRowId?: number | null;
+  dragOverRowId?: number | null;
   onDragStart?: (id: number | null) => void;
+  onDragEnter?: (id: number | null) => void;
   onDropRow?: (id: number) => void;
   editable?: boolean;
   editingId?: number | null;
@@ -1161,10 +1223,13 @@ function Table({
             {rows.map((row, index) => (
               <tr
                 key={row.id}
-                className={`border-t border-slate-100 ${row.history_match_type !== "none" ? "bg-rose-50" : ""} ${
-                  draggedRowId === row.id ? "opacity-60" : ""
+                className={`border-t border-slate-100 transition-all duration-200 ease-out ${row.history_match_type !== "none" ? "bg-rose-50" : ""} ${
+                  draggedRowId === row.id ? "scale-[0.995] opacity-60" : ""
+                } ${
+                  dragOverRowId === row.id && draggedRowId !== row.id ? "bg-teal-50 shadow-inner" : ""
                 }`}
                 onDragOver={queueMode ? (event) => event.preventDefault() : undefined}
+                onDragEnter={queueMode ? () => onDragEnter?.(row.id) : undefined}
                 onDrop={queueMode ? () => onDropRow?.(row.id) : undefined}
               >
                 <td className="p-3">
@@ -1196,7 +1261,7 @@ function Table({
                     <span title={row.history_match_detail ?? undefined}>{translateHistoryMatch(row.history_match_type)}</span>
                   )}
                 </td>
-                <td className="p-3">{formatRuDateTime(row.updated_at)}</td>
+                <td className="whitespace-nowrap p-3">{formatRuDateTime(row.updated_at)}</td>
                 <td className="p-3">{row.last_error ?? ""}</td>
                 {editable || removable ? (
                   <td className="p-3">
@@ -1211,8 +1276,14 @@ function Table({
                       </div>
                     ) : editable ? (
                       <div className="flex flex-wrap gap-2">
-                        <button className="rounded border border-slate-300 px-3 py-1.5 text-xs" type="button" onClick={() => onStartEdit?.(row)}>
-                          Редактировать
+                        <button
+                          aria-label={`Редактировать: ${row.company}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700"
+                          title="Редактировать"
+                          type="button"
+                          onClick={() => onStartEdit?.(row)}
+                        >
+                          <Pencil size={16} aria-hidden="true" />
                         </button>
                         <label className="flex items-center rounded border border-slate-300 px-2 py-1 text-xs">
                           <span className="sr-only">Вариант письма</span>
@@ -1228,13 +1299,27 @@ function Table({
                             ))}
                           </select>
                         </label>
-                        <button className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700" type="button" onClick={() => onExclude?.(row)}>
-                          Удалить
-                        </button>
+                        {!queueMode ? (
+                          <button
+                            aria-label={`Удалить: ${row.company}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100"
+                            title="Удалить"
+                            type="button"
+                            onClick={() => onExclude?.(row)}
+                          >
+                            <X size={17} aria-hidden="true" />
+                          </button>
+                        ) : null}
                       </div>
                     ) : (
-                      <button className="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700" type="button" onClick={() => onRemove?.(row)}>
-                        Удалить
+                      <button
+                        aria-label={`Удалить запись: ${row.company}`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100"
+                        title="Удалить"
+                        type="button"
+                        onClick={() => onRemove?.(row)}
+                      >
+                        <X size={17} aria-hidden="true" />
                       </button>
                     )}
                   </td>
@@ -1243,6 +1328,15 @@ function Table({
                   <td className="p-3 text-right">
                     <div className="inline-flex items-center gap-2">
                       <button
+                        aria-label={`Удалить: ${row.company}`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100"
+                        title="Удалить"
+                        type="button"
+                        onClick={() => onExclude?.(row)}
+                      >
+                        <X size={17} aria-hidden="true" />
+                      </button>
+                      <button
                         aria-label={`Отправить сейчас: ${row.company}`}
                         className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-300 bg-white text-base text-slate-600 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 disabled:cursor-wait disabled:opacity-60"
                         disabled={sendingNowId === row.id}
@@ -1250,18 +1344,21 @@ function Table({
                         title="Отправить письмо сейчас"
                         onClick={() => onSendNow?.(row)}
                       >
-                        {sendingNowId === row.id ? "…" : "✈"}
+                        {sendingNowId === row.id ? "…" : <Send size={17} aria-hidden="true" />}
                       </button>
                     <button
                       aria-label={`Перетащить: отправка ${row.queue_position ?? index + 1}`}
                       className="inline-flex h-9 w-9 cursor-grab items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
                       draggable
                       onDragStart={() => onDragStart?.(row.id)}
-                      onDragEnd={() => onDragStart?.(null)}
+                      onDragEnd={() => {
+                        onDragStart?.(null);
+                        onDragEnter?.(null);
+                      }}
                       type="button"
                       title="Перетащить выше или ниже в очереди"
                     >
-                      ☰
+                      <GripVertical size={17} aria-hidden="true" />
                     </button>
                     </div>
                   </td>
@@ -1275,15 +1372,16 @@ function Table({
   );
 }
 
-function renderClientTemplate(value: string, recipient: {company: string; email: string}) {
+function renderClientTemplate(value: string, recipient: {company: string; email: string}, stockListText: string) {
   const company = recipient.company.trim() || "коллеги";
+  const stockList = stockListText.trim() || "[список позиций будет подставлен при отправке]";
   return value
     .replace(/{{\s*Компания\s*}}/gi, company)
     .replace(/{{\s*company\s*}}/gi, company)
     .replace(/{{\s*email\s*}}/gi, recipient.email)
-    .replace(/{{\s*СписокПозиции\s*}}/gi, "[список позиций будет подставлен при отправке]")
-    .replace(/{{\s*СписокПозиций\s*}}/gi, "[список позиций будет подставлен при отправке]")
-    .replace(/{{\s*stockList\s*}}/gi, "[список позиций будет подставлен при отправке]");
+    .replace(/{{\s*СписокПозиции\s*}}/gi, stockList)
+    .replace(/{{\s*СписокПозиций\s*}}/gi, stockList)
+    .replace(/{{\s*stockList\s*}}/gi, stockList);
 }
 
 function UploadSummary({summary}: {summary: Record<string, unknown>}) {
@@ -1359,6 +1457,20 @@ function translateEventType(type: string) {
     requeue: "Возвращено в очередь"
   };
   return labels[type] ?? type;
+}
+
+function formatEventDetail(event: EventRow) {
+  try {
+    const detail = JSON.parse(event.detail_json) as Record<string, unknown>;
+    const company = typeof detail.company === "string" ? detail.company : "";
+    const email = typeof detail.email === "string" ? detail.email : "";
+    const error = typeof detail.error === "string" ? detail.error : "";
+    const sentAppendStatus = typeof detail.sent_append_status === "string" ? detail.sent_append_status : "";
+    const rowsCount = typeof detail.rows_count === "number" ? `${detail.rows_count} строк` : "";
+    return [company, email, sentAppendStatus ? `Sent: ${sentAppendStatus}` : "", rowsCount, error].filter(Boolean).join(" — ");
+  } catch {
+    return "";
+  }
 }
 
 async function parseJsonResponse(response: Response) {

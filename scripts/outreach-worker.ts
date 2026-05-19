@@ -62,7 +62,11 @@ async function tick() {
       .prepare("update outreach_recipients set status='sent', queue_position=null, last_sent_at=?, updated_at=?, last_error=null, smtp_response=? where id=?")
       .run(now, now, smtpResponse, recipient.id);
     saveSettings({next_send_after: nextDelayIso()});
-    addEvent("send_success", recipient.id, messageId, {sent_append_status: "success"});
+    addEvent("send_success", recipient.id, messageId, {
+      company: recipient.company,
+      email: recipient.email,
+      sent_append_status: "success"
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 400) : "Worker error";
     database
@@ -73,7 +77,7 @@ async function tick() {
     } else {
       saveSettings({enabled: false});
     }
-    addEvent("send_error", recipient.id, null, {error: message});
+    addEvent("send_error", recipient.id, null, {company: recipient.company, email: recipient.email, error: message});
   }
 }
 

@@ -4,9 +4,12 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import {outreachDbPath} from "@/lib/private/config";
 import {
+  defaultStockTableText,
   defaultOutreachTemplate,
   defaultOutreachTemplates,
+  parseStockTableText,
   type OutreachStoredTemplate,
+  type OutreachStockRow,
   type OutreachTemplateSet,
   type OutreachTemplateVariant
 } from "@/lib/outreach/template";
@@ -192,6 +195,12 @@ function initOutreachDb(database: Database.Database) {
     create table if not exists outreach_mail_settings (
       key text primary key,
       value_json text not null,
+      updated_at text not null
+    );
+
+    create table if not exists outreach_stock_list (
+      id integer primary key check (id = 1),
+      text text not null,
       updated_at text not null
     );
   `);
@@ -574,6 +583,33 @@ export function saveOutreachTemplate(variant: OutreachTemplateVariant, template:
   return next;
 }
 
+export function getOutreachStockListText() {
+  const row = getOutreachDb()
+    .prepare("select text from outreach_stock_list where id = 1")
+    .get() as {text: string} | undefined;
+  return row?.text ?? defaultStockTableText();
+}
+
+export function getOutreachStockRows(): OutreachStockRow[] {
+  return parseStockTableText(getOutreachStockListText());
+}
+
+export function saveOutreachStockListText(text: string) {
+  const rows = parseStockTableText(text);
+  if (rows.length === 0) {
+    throw new Error("stock_list_required");
+  }
+  const normalizedText = defaultStockTableText(rows);
+  const now = new Date().toISOString();
+  getOutreachDb()
+    .prepare(
+      "insert into outreach_stock_list (id, text, updated_at) values (1, ?, ?) on conflict(id) do update set text=excluded.text, updated_at=excluded.updated_at"
+    )
+    .run(normalizedText, now);
+  addEvent("stock_list_changed", null, null, {rows_count: rows.length});
+  return {text: normalizedText, rows_count: rows.length, updated_at: now};
+}
+
 export function addEvent(type: string, recipientId: number | null, messageId: string | null, detail: Record<string, unknown>) {
   getOutreachDb()
     .prepare("insert into outreach_events (timestamp, type, recipient_id, message_id, detail_json) values (?, ?, ?, ?, ?)")
@@ -782,8 +818,9 @@ export function listRecipients(status?: string) {
   return database.prepare("select * from outreach_recipients order by updated_at desc limit 200").all() as RecipientRow[];
 }
 
-export function recentEvents() {
+export function recentEvents(limit = 50) {
+  const normalizedLimit = Math.max(1, Math.min(1000, Number(limit) || 50));
   return getOutreachDb()
-    .prepare("select * from outreach_events order by timestamp desc limit 50")
-    .all() as Array<{id: number; timestamp: string; type: string; recipient_id: number | null; message_id: string | null; detail_json: string}>;
+    .prepare("select * from outreach_events order by timestamp desc limit ?")
+    .all(normalizedLimit) as Array<{id: number; timestamp: string; type: string; recipient_id: number | null; message_id: string | null; detail_json: string}>;
 }

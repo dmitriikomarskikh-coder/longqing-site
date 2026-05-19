@@ -1,5 +1,5 @@
 import {guardPrivateApi, privateHeaders} from "@/lib/private/api";
-import {getOutreachTemplates, saveOutreachTemplate} from "@/lib/outreach/db";
+import {getOutreachStockRows, getOutreachTemplates, saveOutreachTemplate} from "@/lib/outreach/db";
 import {renderOutreachEmail, scanForbiddenOutreachPhrases, type OutreachTemplateVariant} from "@/lib/outreach/template";
 
 function normalizeVariant(value: unknown): OutreachTemplateVariant {
@@ -9,11 +9,12 @@ function normalizeVariant(value: unknown): OutreachTemplateVariant {
 
 function withPreviews() {
   const templates = getOutreachTemplates();
+  const stockRows = getOutreachStockRows();
   return {
     variants: {
-      1: {...templates[1], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[1])},
-      2: {...templates[2], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[2])},
-      3: {...templates[3], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[3])}
+      1: {...templates[1], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[1], stockRows)},
+      2: {...templates[2], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[2], stockRows)},
+      3: {...templates[3], preview: renderOutreachEmail({company: "Тестовая компания", email: "example@example.ru"}, templates[3], stockRows)}
     }
   };
 }
