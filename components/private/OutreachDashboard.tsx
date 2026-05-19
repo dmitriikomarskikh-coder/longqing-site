@@ -1359,7 +1359,6 @@ function Table({
               {showRowNumber ? <th className="w-14 p-3">№</th> : null}
               <th className="p-3">Компания</th>
               <th className="p-3">E-mail</th>
-              <th className="p-3">Статус</th>
               <th className="p-3">Вар.</th>
               <th className="p-3">Совпадение</th>
               <th className="p-3">Обновлено</th>
@@ -1406,7 +1405,6 @@ function Table({
                     row.email
                   )}
                 </td>
-                <td className="p-3">{translateRecipientStatus(row.status, queueMode ? index : undefined, row.queue_position)}</td>
                 <td className="p-3">{row.variant ?? 1}</td>
                 <td className="p-3 text-xs text-slate-600">
                   {row.history_match_type === "none" ? "—" : (
@@ -1553,23 +1551,6 @@ function UploadSummary({summary}: {summary: Record<string, unknown>}) {
       ))}
     </dl>
   );
-}
-
-function translateRecipientStatus(status: string, queueIndex?: number, queuePosition?: number | null) {
-  if (status === "queued" && queueIndex !== undefined) {
-    return `Отправка ${queuePosition ?? queueIndex + 1}`;
-  }
-  const labels: Record<string, string> = {
-    queued: "В очереди",
-    paused: "На паузе",
-    sent: "Отправлено",
-    error: "Ошибка",
-    skipped: "Пропущено",
-    unsubscribed: "Отписался",
-    do_not_contact: "Не контактировать",
-    bounced: "Возврат письма"
-  };
-  return labels[status] ?? status;
 }
 
 function translateHistoryMatch(type: string) {
