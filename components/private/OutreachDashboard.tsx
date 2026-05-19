@@ -789,6 +789,7 @@ export function OutreachDashboard() {
         totalRows={queue.length}
         expanded={queueExpanded}
         onToggleExpanded={() => setQueueExpanded((current) => !current)}
+        showRowNumber
         queueMode
         draggedRowId={draggedQueueId}
         onPointerDragStart={startQueueDrag}
@@ -810,6 +811,7 @@ export function OutreachDashboard() {
         totalRows={sent.length}
         expanded={sentExpanded}
         onToggleExpanded={() => setSentExpanded((current) => !current)}
+        showRowNumber
         removable
         onRemove={deleteSentRecipient}
       />
@@ -1286,6 +1288,7 @@ function Table({
   totalRows,
   expanded = false,
   onToggleExpanded,
+  showRowNumber = false,
   queueMode = false,
   draggedRowId = null,
   onPointerDragStart,
@@ -1308,6 +1311,7 @@ function Table({
   totalRows?: number;
   expanded?: boolean;
   onToggleExpanded?: () => void;
+  showRowNumber?: boolean;
   queueMode?: boolean;
   draggedRowId?: number | null;
   onPointerDragStart?: (row: Recipient, event: ReactPointerEvent<HTMLButtonElement>) => void;
@@ -1352,10 +1356,11 @@ function Table({
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
+              {showRowNumber ? <th className="w-14 p-3">№</th> : null}
               <th className="p-3">Компания</th>
               <th className="p-3">E-mail</th>
               <th className="p-3">Статус</th>
-              <th className="p-3">№</th>
+              <th className="p-3">Вар.</th>
               <th className="p-3">Совпадение</th>
               <th className="p-3">Обновлено</th>
               <th className="p-3">Ошибка</th>
@@ -1374,6 +1379,11 @@ function Table({
                   draggedRowId === row.id ? "relative z-10 bg-slate-100 shadow-sm ring-2 ring-inset ring-blue-200" : ""
                 }`}
               >
+                {showRowNumber ? (
+                  <td className="whitespace-nowrap p-3 font-semibold text-slate-500">
+                    {queueMode ? (row.queue_position ?? index + 1) : index + 1}
+                  </td>
+                ) : null}
                 <td className="p-3">
                   {editingId === row.id ? (
                     <input
