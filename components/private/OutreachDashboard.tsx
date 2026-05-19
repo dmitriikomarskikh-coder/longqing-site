@@ -1,6 +1,6 @@
 "use client";
 
-import type {FormEvent} from "react";
+import type {DragEvent as ReactDragEvent, FormEvent} from "react";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {GripVertical, Pencil, Send, X} from "lucide-react";
 
@@ -38,6 +38,12 @@ type Recipient = {
   history_match_type: "none" | "full" | "email" | "company";
   history_match_detail: string | null;
   variant: 1 | 2 | 3;
+};
+
+type DragPreview = {
+  row: Recipient;
+  x: number;
+  y: number;
 };
 
 type EventRow = {
@@ -179,6 +185,7 @@ export function OutreachDashboard() {
   const [manualMessage, setManualMessage] = useState("");
   const [draggedQueueId, setDraggedQueueId] = useState<number | null>(null);
   const [dragOverQueueId, setDragOverQueueId] = useState<number | null>(null);
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [sendNowCandidate, setSendNowCandidate] = useState<Recipient | null>(null);
   const [sendingNowId, setSendingNowId] = useState<number | null>(null);
   const [uploadSummary, setUploadSummary] = useState<Record<string, unknown> | null>(null);
@@ -244,6 +251,20 @@ export function OutreachDashboard() {
     const timer = window.setInterval(updateMoscowClock, 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!draggedQueueId) {
+      return undefined;
+    }
+    function handleDragOver(event: DragEvent) {
+      if (event.clientX === 0 && event.clientY === 0) {
+        return;
+      }
+      setDragPreview((current) => current ? {...current, x: event.clientX, y: event.clientY} : current);
+    }
+    window.addEventListener("dragover", handleDragOver);
+    return () => window.removeEventListener("dragover", handleDragOver);
+  }, [draggedQueueId]);
 
   async function control(action: "start" | "pause") {
     const response = await fetch(`/api/private/outreach/control/${action}`, {method: "POST"});
@@ -453,17 +474,33 @@ export function OutreachDashboard() {
     }
   }
 
+  function clearQueueDrag() {
+    setDraggedQueueId(null);
+    setDragOverQueueId(null);
+    setDragPreview(null);
+  }
+
+  function startQueueDrag(row: Recipient, event: ReactDragEvent<HTMLButtonElement>) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(row.id));
+    const dragImage = document.createElement("canvas");
+    dragImage.width = 1;
+    dragImage.height = 1;
+    event.dataTransfer.setDragImage(dragImage, 0, 0);
+    setDraggedQueueId(row.id);
+    setDragOverQueueId(null);
+    setDragPreview({row, x: event.clientX, y: event.clientY});
+  }
+
   async function reorderQueue(targetId: number) {
     if (!draggedQueueId || draggedQueueId === targetId) {
-      setDraggedQueueId(null);
-      setDragOverQueueId(null);
+      clearQueueDrag();
       return;
     }
     const sourceIndex = queue.findIndex((row) => row.id === draggedQueueId);
     const targetIndex = queue.findIndex((row) => row.id === targetId);
     if (sourceIndex < 0 || targetIndex < 0) {
-      setDraggedQueueId(null);
-      setDragOverQueueId(null);
+      clearQueueDrag();
       return;
     }
     const nextQueue = [...queue];
@@ -471,8 +508,7 @@ export function OutreachDashboard() {
     nextQueue.splice(targetIndex, 0, moved);
     const numberedQueue = nextQueue.map((row, index) => ({...row, queue_position: index + 1}));
     setQueue(numberedQueue);
-    setDraggedQueueId(null);
-    setDragOverQueueId(null);
+    clearQueueDrag();
 
     const response = await fetch("/api/private/outreach/recipients/reorder", {
       method: "POST",
@@ -517,6 +553,7 @@ export function OutreachDashboard() {
       </div>
 
       {message ? <p className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p> : null}
+      {dragPreview ? <QueueDragPreview preview={dragPreview} /> : null}
 
       {sendNowCandidate ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm">
@@ -713,8 +750,9 @@ export function OutreachDashboard() {
         queueMode
         draggedRowId={draggedQueueId}
         dragOverRowId={dragOverQueueId}
-        onDragStart={setDraggedQueueId}
+        onDragStart={startQueueDrag}
         onDragEnter={setDragOverQueueId}
+        onDragEnd={clearQueueDrag}
         onDropRow={reorderQueue}
         editable
         editingId={editingId}
@@ -893,6 +931,29 @@ function Stat({label, value, tone = "default"}: {label: string; value: string; t
     <div className={tone === "danger" ? "rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"}>
       <p className={tone === "danger" ? "text-xs uppercase tracking-[0.12em] text-rose-500" : "text-xs uppercase tracking-[0.12em] text-slate-500"}>{label}</p>
       <p className={tone === "danger" ? "mt-2 text-xl font-semibold text-rose-800" : "mt-2 text-xl font-semibold text-slate-950"}>{value}</p>
+    </div>
+  );
+}
+
+function QueueDragPreview({preview}: {preview: DragPreview}) {
+  return (
+    <div
+      className="pointer-events-none fixed z-[60] w-[min(560px,calc(100vw-32px))] rounded-xl border border-teal-300 bg-white/95 p-3 text-sm text-slate-950 shadow-2xl ring-4 ring-teal-100/70"
+      style={{
+        left: preview.x,
+        top: preview.y,
+        transform: "translate(14px, 14px)"
+      }}
+    >
+      <div className="grid gap-1">
+        <div className="flex items-center justify-between gap-3">
+          <span className="truncate font-semibold">{preview.row.company}</span>
+          <span className="shrink-0 rounded bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700">
+            Отправка {preview.row.queue_position ?? ""}
+          </span>
+        </div>
+        <div className="truncate text-slate-600">{preview.row.email}</div>
+      </div>
     </div>
   );
 }
@@ -1164,6 +1225,7 @@ function Table({
   dragOverRowId = null,
   onDragStart,
   onDragEnter,
+  onDragEnd,
   onDropRow,
   editable = false,
   editingId = null,
@@ -1184,8 +1246,9 @@ function Table({
   queueMode?: boolean;
   draggedRowId?: number | null;
   dragOverRowId?: number | null;
-  onDragStart?: (id: number | null) => void;
+  onDragStart?: (row: Recipient, event: ReactDragEvent<HTMLButtonElement>) => void;
   onDragEnter?: (id: number | null) => void;
+  onDragEnd?: () => void;
   onDropRow?: (id: number) => void;
   editable?: boolean;
   editingId?: number | null;
@@ -1350,11 +1413,8 @@ function Table({
                       aria-label={`Перетащить: отправка ${row.queue_position ?? index + 1}`}
                       className="inline-flex h-9 w-9 cursor-grab items-center justify-center rounded border border-slate-300 bg-white text-lg leading-none text-slate-500 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700 active:cursor-grabbing"
                       draggable
-                      onDragStart={() => onDragStart?.(row.id)}
-                      onDragEnd={() => {
-                        onDragStart?.(null);
-                        onDragEnter?.(null);
-                      }}
+                      onDragStart={(event) => onDragStart?.(row, event)}
+                      onDragEnd={onDragEnd}
                       type="button"
                       title="Перетащить выше или ниже в очереди"
                     >
