@@ -8,6 +8,12 @@ export function middleware(request: NextRequest) {
   const isPrivatePage = pathname.startsWith("/en/private/");
   const isPrivateApi = pathname.startsWith("/api/private/");
 
+  if (pathname === "/en/private/outreach" || pathname.startsWith("/en/private/outreach/")) {
+    const response = NextResponse.redirect("https://mail.dk7world.pro/private/outreach/longqingtrade");
+    response.headers.set("X-Robots-Tag", robotsHeader);
+    return response;
+  }
+
   if (!isPrivatePage && !isPrivateApi) {
     return NextResponse.next();
   }
