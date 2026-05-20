@@ -1,8 +1,5 @@
 import type {Metadata} from "next";
 import {notFound, redirect} from "next/navigation";
-import {OutreachDashboard} from "@/components/private/OutreachDashboard";
-import {privateEnabled} from "@/lib/private/config";
-import {hasPrivateSession} from "@/lib/private/session";
 
 export const metadata: Metadata = {
   title: "Панель рассылки | LONGQING",
@@ -14,12 +11,5 @@ export default async function PrivateOutreachPage({params}: {params: Promise<{lo
   if (locale !== "en") {
     notFound();
   }
-  if (!privateEnabled() || !(await hasPrivateSession())) {
-    redirect("/en/private/auth");
-  }
-  return (
-    <main className="min-h-screen bg-slate-50 px-5 pb-20 pt-32 text-slate-950">
-      <OutreachDashboard />
-    </main>
-  );
+  redirect("https://mail.dk7world.pro/private/outreach/longqingtrade");
 }

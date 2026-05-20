@@ -27,6 +27,9 @@ export function buildOutreachDeliveryHeaders(settings: OutreachMailSettings) {
 }
 
 export function assertOutreachSendEnv() {
+  if (env("LONGQING_OUTREACH_LEGACY_SEND_ENABLED") !== "true") {
+    throw new Error("LONGQING outreach moved to https://mail.dk7world.pro/private/outreach/longqingtrade");
+  }
   const settings = getOutreachMailSettings();
   const required = [
     ["SMTP_HOST", settings.smtp_host],
