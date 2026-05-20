@@ -6,6 +6,7 @@ import {fileURLToPath} from "node:url";
 import dotenv from "dotenv";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
+import {buildEmailDeliveryHeaders} from "../lib/outreach/delivery-headers";
 import {renderOutreachEmail, isValidOutreachEmail} from "../lib/outreach/template";
 
 type Mode = "dry-run" | "test-send" | "batch-send" | "report";
@@ -128,6 +129,20 @@ function boolEnv(name: string, fallback = false) {
 function intEnv(name: string, fallback: number) {
   const value = Number.parseInt(env(name), 10);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function deliveryHeaders() {
+  return buildEmailDeliveryHeaders({
+    mode: env("OUTREACH_HEADER_MODE"),
+    listUnsubscribe: env("OUTREACH_LIST_UNSUBSCRIBE"),
+    identity: {
+      smtpUser: env("SMTP_USER"),
+      smtpFrom: env("SMTP_FROM", "LONGQING TRADE <office@longqingtrade.com>"),
+      smtpReplyTo: env("SMTP_REPLY_TO", "office@longqingtrade.com"),
+      imapUser: env("IMAP_USER", env("SMTP_USER"))
+    },
+    warn: (message) => console.warn(message)
+  });
 }
 
 function fail(message: string): never {
@@ -296,8 +311,7 @@ function buildRawMessage(content: EmailContent, to: string) {
     `Subject: ${encodedHeader(content.subject)}`,
     `Date: ${new Date().toUTCString()}`,
     `Message-ID: <${crypto.randomUUID()}@longqingtrade.com>`,
-    "List-Unsubscribe: <mailto:office@longqingtrade.com?subject=unsubscribe>",
-    "Precedence: bulk",
+    ...deliveryHeaders().rawHeaderLines,
     "MIME-Version: 1.0",
     `Content-Type: multipart/alternative; boundary="${boundary}"`
   ];
@@ -563,10 +577,7 @@ async function sendOne(mode: Mode, recipient: Recipient, sentMailbox?: SentMailb
     subject: content.subject,
     text: content.text,
     html: content.html,
-    headers: {
-      "List-Unsubscribe": "<mailto:office@longqingtrade.com?subject=unsubscribe>",
-      Precedence: "bulk"
-    },
+    headers: deliveryHeaders().headers,
     attachments
   });
   const sentAppendStatus = await appendSent(rawMessage, sentMailbox);

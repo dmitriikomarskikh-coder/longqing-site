@@ -2,6 +2,7 @@ import {Buffer} from "node:buffer";
 import {ImapFlow} from "imapflow";
 import nodemailer from "nodemailer";
 import {getOutreachMailSettings, getOutreachStockRows, getOutreachTemplate, type OutreachMailSettings, type RecipientRow} from "./db";
+import {buildEmailDeliveryHeaders} from "./delivery-headers";
 import {loadOutreachEnv, outreachEnv} from "./runtime-env";
 import {renderOutreachEmail} from "./template";
 
@@ -10,6 +11,20 @@ function env(name: string) {
 }
 
 loadOutreachEnv();
+
+export function buildOutreachDeliveryHeaders(settings: OutreachMailSettings) {
+  return buildEmailDeliveryHeaders({
+    mode: env("OUTREACH_HEADER_MODE"),
+    listUnsubscribe: env("OUTREACH_LIST_UNSUBSCRIBE"),
+    identity: {
+      smtpUser: settings.smtp_user,
+      smtpFrom: settings.smtp_from,
+      smtpReplyTo: settings.smtp_reply_to,
+      imapUser: settings.imap_user
+    },
+    warn: (message) => console.warn(message)
+  });
+}
 
 export function assertOutreachSendEnv() {
   const settings = getOutreachMailSettings();
@@ -52,6 +67,7 @@ export async function sendOutreachRecipient(recipient: RecipientRow) {
     greetingTimeout: 10000,
     socketTimeout: 15000
   });
+  const deliveryHeaders = buildOutreachDeliveryHeaders(settings);
   const info = await transporter.sendMail({
     from: settings.smtp_from,
     to: recipient.email,
@@ -59,18 +75,15 @@ export async function sendOutreachRecipient(recipient: RecipientRow) {
     subject: content.subject,
     text: content.text,
     html: content.html,
-    headers: {
-      "List-Unsubscribe": "<mailto:office@longqingtrade.com?subject=unsubscribe>",
-      Precedence: "bulk"
-    }
+    headers: deliveryHeaders.headers
   });
   const messageId = typeof info.messageId === "string" ? info.messageId : "";
   const smtpResponse = typeof info.response === "string" ? info.response : "";
-  await appendSent(settings, recipient.email, content.subject, content.text, content.html);
+  await appendSent(settings, recipient.email, content.subject, content.text, content.html, deliveryHeaders.rawHeaderLines);
   return {messageId, smtpResponse};
 }
 
-async function appendSent(settings: OutreachMailSettings, to: string, subject: string, text: string, html: string) {
+async function appendSent(settings: OutreachMailSettings, to: string, subject: string, text: string, html: string, rawHeaderLines: string[]) {
   const client = new ImapFlow({
     host: settings.imap_host,
     port: settings.imap_port,
@@ -90,8 +103,7 @@ async function appendSent(settings: OutreachMailSettings, to: string, subject: s
       `To: ${to}`,
       `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
       `Date: ${new Date().toUTCString()}`,
-      "List-Unsubscribe: <mailto:office@longqingtrade.com?subject=unsubscribe>",
-      "Precedence: bulk",
+      ...rawHeaderLines,
       "MIME-Version: 1.0",
       `Content-Type: multipart/alternative; boundary="${boundary}"`,
       "",
